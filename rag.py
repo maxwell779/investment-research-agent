@@ -11,6 +11,7 @@
 import os
 import sqlite3
 import time
+import requests
 import numpy as np
 from openai import OpenAI
 import tools
@@ -123,6 +124,66 @@ def ingest_pdf(path, ticker, source=None):
     return {"chunks": len(chunks), "file": fn}
 
 
+def _has_dart_report(ticker):
+    c = _conn()
+    n = c.execute("SELECT COUNT(*) FROM docs WHERE ticker=? AND source LIKE 'DART 사업보고서%'", (ticker,)).fetchone()[0]
+    c.close()
+    return n > 0
+
+
+def ingest_dart_report(ticker, name=""):
+    """DART 사업보고서(또는 최신 정기보고서) 본문에서 부문별 매출·사업내용 등 핵심 청크를 RAG에 색인.
+    합법: 공개 법정공시. 화면엔 발췌+DART 원문 링크."""
+    import io as _io
+    import zipfile as _zip
+    import datetime as _dt
+    if not ticker.endswith((".KS", ".KQ")):
+        return {"error": "한국 종목 전용"}
+    key = os.environ.get("DART_API_KEY")
+    corp = tools._dart_corp_map().get(ticker.split(".")[0]) if key else None
+    if not corp:
+        return {"error": "corp_code/키 없음"}
+    try:
+        bgn = (_dt.date.today() - _dt.timedelta(days=500)).strftime("%Y%m%d")
+        lst = requests.get("https://opendart.fss.or.kr/api/list.json",
+                           params={"crtfc_key": key, "corp_code": corp, "bgn_de": bgn, "pblntf_ty": "A", "page_count": "20"},
+                           timeout=15).json()
+        rcept = None
+        for it in lst.get("list", []):
+            if "사업보고서" in (it.get("report_nm") or ""):
+                rcept = it.get("rcept_no"); break
+        if not rcept:
+            for it in lst.get("list", []):
+                if "보고서" in (it.get("report_nm") or ""):
+                    rcept = it.get("rcept_no"); break
+        if not rcept:
+            return {"error": "보고서 없음"}
+        doc = requests.get("https://opendart.fss.or.kr/api/document.xml",
+                           params={"crtfc_key": key, "rcept_no": rcept}, timeout=60).content
+        zf = _zip.ZipFile(_io.BytesIO(doc))
+        raw = " ".join(zf.read(n).decode("utf-8", "ignore") for n in zf.namelist())
+        import re as _re
+        text = _re.sub(r"\s+", " ", _re.sub(r"<[^>]+>", " ", raw))
+        chunks = _chunks(text, 1000)
+        kws = ["부문", "매출", "영업이익", "사업의 내용", "주요 제품", "리스크", "경쟁", "점유율", "연구개발", "수주"]
+        top = sorted(chunks, key=lambda ch: -sum(ch.count(k) for k in kws))[:25]
+        top = [ch for ch in top if sum(ch.count(k) for k in kws) > 0]
+        if not top:
+            return {"error": "핵심 본문 추출 실패"}
+        embs = embed(top)
+        link = f"https://dart.fss.or.kr/dsaf001/main.do?rcpNo={rcept}"
+        c = _conn()
+        c.execute("DELETE FROM docs WHERE ticker=? AND source LIKE 'DART 사업보고서%'", (ticker,))
+        for ch, e in zip(top, embs):
+            c.execute("INSERT INTO docs(ticker,source,title,text,link,date,emb,ts,kind) VALUES(?,?,?,?,?,?,?,?,'report')",
+                      (ticker, "DART 사업보고서", "사업보고서 본문", ch, link, "", e.tobytes(), time.time()))
+        c.commit()
+        c.close()
+        return {"chunks": len(top), "rcept": rcept}
+    except Exception as e:
+        return {"error": f"DART 사업보고서 색인 실패: {e}"}
+
+
 def _fresh(ticker, ttl=3600):
     c = _conn()
     row = c.execute("SELECT MAX(ts) FROM docs WHERE ticker=? AND (kind='auto' OR kind IS NULL)", (ticker,)).fetchone()
@@ -151,6 +212,11 @@ def research(ticker, name, question=""):
     """종목 코퍼스를 (필요시) 갱신·검색해 출처 인용 종합을 생성한다."""
     if not _fresh(ticker):
         ingest(ticker, name)
+    if ticker.endswith((".KS", ".KQ")) and not _has_dart_report(ticker):
+        try:
+            ingest_dart_report(ticker, name)  # 사업보고서 본문(부문별 매출 등) 1회 색인
+        except Exception:
+            pass
     q = question or f"{name} 투자 관점 종합 분석"
     hits = _retrieve(ticker, q, 6)
     if not hits:

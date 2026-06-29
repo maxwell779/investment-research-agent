@@ -7,4 +7,6 @@ finance-datareader
 yfinance
 requests
 pandas
+numpy
+pypdf
 python-dotenv
