@@ -249,6 +249,35 @@ def get_analyst(ticker: str) -> dict:
         return {"error": f"컨센서스 조회 실패: {e}"}
 
 
+def get_recommendations(ticker: str) -> dict:
+    """최근 애널리스트 등급 변경 이력(증권사·상향/하향·등급)을 조회한다.
+
+    Args:
+        ticker: yfinance 호환 티커.
+
+    Returns:
+        {"items": [{"date","firm","to","from","action"}, ...]}  (최신순, 합법적 공개 데이터)
+    """
+    try:
+        df = yf.Ticker(ticker).upgrades_downgrades
+        if df is None or df.empty:
+            EVIDENCE.append({"tool": "get_recommendations", "input": ticker, "source": "yfinance", "output": "등급변경 없음"})
+            return {"error": f"{ticker} 애널리스트 등급변경 이력이 없습니다.", "items": []}
+        df = df.sort_index(ascending=False).head(8)
+        amap = {"up": "상향", "down": "하향", "init": "신규", "main": "유지", "reit": "유지"}
+        items = []
+        for idx, r in df.iterrows():
+            act = str(r.get("Action", "")).lower()
+            items.append({"date": str(idx)[:10], "firm": r.get("Firm"),
+                          "to": r.get("ToGrade"), "from": r.get("FromGrade"),
+                          "action": amap.get(act, act or "-")})
+        EVIDENCE.append({"tool": "get_recommendations", "input": ticker, "source": "yfinance(애널리스트 등급변경)",
+                         "output": f"최근 {items[0]['firm']} {items[0]['to']}({items[0]['action']}) 등 {len(items)}건"})
+        return {"items": items}
+    except Exception as e:
+        return {"error": f"등급변경 조회 실패: {e}", "items": []}
+
+
 def get_calendar(ticker: str) -> dict:
     """다음 실적 발표일과 배당 정보(배당수익률·배당락일·배당성향)를 조회한다.
 
@@ -469,5 +498,5 @@ def get_naver_news(query: str, display: int = 6) -> dict:
 
 
 TOOLS = [resolve_ticker, get_price, get_financials, get_kr_fundamentals,
-         get_technicals, get_financial_trend, get_analyst, get_calendar,
-         get_naver_news, get_news]
+         get_technicals, get_financial_trend, get_analyst, get_recommendations,
+         get_calendar, get_naver_news, get_news]

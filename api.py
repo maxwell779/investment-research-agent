@@ -58,6 +58,7 @@ def dashboard(query: str, period: str = "6mo"):
         "fundamentals": (tools.get_kr_fundamentals(tk) if is_kr else tools.get_financials(tk)),
         "financial_trend": tools.get_financial_trend(tk),
         "analyst": tools.get_analyst(tk),
+        "recommendations": tools.get_recommendations(tk),
         "calendar": tools.get_calendar(tk),
         "history": tools.get_history(tk, period),
         "news": (tools.get_naver_news(r.get("name") or tk) if is_kr else tools.get_news(tk, 6)),
@@ -131,6 +132,31 @@ def screener(market: str = "all", per_max: float = None, ret1m_min: float = None
     key = {"marketcap": "marketcap", "return": "return_1m", "per": "PER", "rsi": "RSI"}.get(sort, "marketcap")
     rows.sort(key=lambda r: (r.get(key) is None, -(r.get(key) or 0) if sort != "per" else (r.get(key) or 1e9)))
     return {"as_of": u.get("as_of"), "count": len(rows), "rows": rows}
+
+
+@app.get("/api/ranking")
+def ranking(by: str = "marketcap", country: str = "all", sector: str = "all"):
+    """글로벌 유니버스 랭킹/비교. by: marketcap(USD)|return. country/sector 필터."""
+    u = _load_universe()
+    rows = [dict(r) for r in u.get("rows", [])]
+    if country != "all":
+        rows = [r for r in rows if r.get("country") == country]
+    if sector != "all":
+        rows = [r for r in rows if r.get("sector") == sector]
+    if by == "return":
+        rows.sort(key=lambda r: (r.get("return_1m") is None, -(r.get("return_1m") or 0)))
+    else:
+        rows.sort(key=lambda r: (r.get("marketcap_usd") is None, -(r.get("marketcap_usd") or 0)))
+    countries = sorted({r.get("country") for r in u.get("rows", []) if r.get("country")})
+    sectors = sorted({r.get("sector") for r in u.get("rows", []) if r.get("sector")})
+    # 나라별 시총 합계(USD)
+    by_country = {}
+    for r in u.get("rows", []):
+        c = r.get("country"); mc = r.get("marketcap_usd")
+        if c and mc:
+            by_country[c] = by_country.get(c, 0) + mc
+    return {"as_of": u.get("as_of"), "rows": rows, "countries": countries, "sectors": sectors,
+            "by_country": sorted(by_country.items(), key=lambda x: -x[1])}
 
 
 @app.get("/api/quotes")

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import PriceChart from './PriceChart'
 import { fmtPrice, fmtBig, Pct, Metric } from './ui'
+import { isStock, toggleStock } from './bookmarks'
 
 const PERIODS = ['1mo', '3mo', '6mo', '1y', '5y']
 const PLABEL = { '1mo': '1개월', '3mo': '3개월', '6mo': '6개월', '1y': '1년', '5y': '5년' }
@@ -34,10 +35,11 @@ function FinancialTrend({ trend, cur }) {
   )
 }
 
-function Consensus({ a, cal, cur }) {
+function Consensus({ a, cal, recs, cur }) {
   const noA = !a || a.error
   const noC = !cal || cal.error
-  if (noA && noC) return <p className="muted">컨센서스·일정 데이터가 없습니다 (yfinance 커버리지 제한).</p>
+  const recItems = (recs && recs.items) || []
+  if (noA && noC && recItems.length === 0) return <p className="muted">컨센서스·일정 데이터가 없습니다 (yfinance 커버리지 제한).</p>
   return (
     <div>
       {!noA && (
@@ -60,7 +62,21 @@ function Consensus({ a, cal, cur }) {
           <Metric label="배당성향">{cal.payout_ratio_pct != null ? `${cal.payout_ratio_pct}%` : '—'}</Metric>
         </div>
       )}
-      <p className="muted" style={{ fontSize: '.78rem' }}>※ yfinance 집계(커버리지·시점 제한 가능). 투자 조언 아님.</p>
+      {recItems.length > 0 && (
+        <div>
+          <div className="m-label" style={{ marginBottom: 8 }}>최근 애널리스트 등급 변경</div>
+          <ul className="recs">
+            {recItems.map((r, i) => (
+              <li key={i}>
+                <span className="muted">{r.date}</span> <b>{r.firm}</b>
+                <span className={r.action === '상향' ? 'up' : r.action === '하향' ? 'down' : 'muted'}> {r.action}</span>
+                <span className="muted"> · {r.from && r.from !== r.to ? `${r.from} → ` : ''}{r.to}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      <p className="muted" style={{ fontSize: '.78rem' }}>※ yfinance 집계 공개 데이터(커버리지·시점 제한 가능). 투자 조언 아님.</p>
     </div>
   )
 }
@@ -72,7 +88,23 @@ export default function Dashboard({ data, period, onPeriod, dark }) {
   const [sLoad, setSLoad] = useState(false)
   const p = data.price || {}, t = data.technicals || {}, f = data.fundamentals || {}, cur = p.currency
 
-  useEffect(() => { setSenti(null) }, [data.ticker])
+  const [brief, setBrief] = useState(null)
+  const [bLoad, setBLoad] = useState(false)
+  const [bm, setBm] = useState(isStock(data.ticker))
+  useEffect(() => { setSenti(null); setBrief(null); setBm(isStock(data.ticker)) }, [data.ticker])
+
+  async function runBriefing() {
+    setBLoad(true)
+    try {
+      const r = await fetch('/api/chat', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question: `${data.name}(${data.ticker}) 종목을 종합 분석해줘. 시세 추세, 밸류에이션(PER/PBR), 애널리스트 의견·목표주가, 최근 뉴스 이슈를 출처와 함께 5줄 내외로 요약.` }),
+      })
+      const d = await r.json()
+      setBrief(d)
+    } catch (e) { setBrief({ answer: '오류: ' + e.message, evidence: [] }) }
+    setBLoad(false)
+  }
 
   async function analyzeSentiment() {
     setSLoad(true)
@@ -90,11 +122,31 @@ export default function Dashboard({ data, period, onPeriod, dark }) {
     <>
       <div className="card header-card">
         <div>
-          <div className="h-name">{data.name} <span className="h-tk">{data.ticker} · {data.market}</span></div>
+          <div className="h-name">
+            <button className="star" onClick={() => { toggleStock(data.ticker, data.name); setBm(isStock(data.ticker)) }} title="관심 종목">{bm ? '★' : '☆'}</button>
+            {data.name} <span className="h-tk">{data.ticker} · {data.market}</span>
+          </div>
           <div className="h-price">{fmtPrice(p.last_close, cur)} <Pct v={p.return_1m_pct} /> <span className="muted" style={{ fontSize: '.9rem' }}>1개월</span></div>
         </div>
-        <div className="h-asof muted">기준일 {p.as_of || '—'}</div>
+        <div style={{ textAlign: 'right' }}>
+          <div className="h-asof muted">기준일 {p.as_of || '—'}</div>
+          <button className="senti-btn" style={{ marginTop: 8, marginBottom: 0 }} onClick={runBriefing} disabled={bLoad}>
+            {bLoad ? '🤖 분석 중…' : '🤖 AI 종합 브리핑'}
+          </button>
+        </div>
       </div>
+      {brief && (
+        <div className="card brief">
+          <div className="bubble-content" style={{ whiteSpace: 'pre-wrap', lineHeight: 1.55 }}>{brief.answer}</div>
+          {(brief.evidence || []).length > 0 && (
+            <div className="evidence">
+              {brief.evidence.map((e, j) => (
+                <div key={j} className="src">🔎 <b>{e.tool}</b> · {e.source}: {e.output}{e.link && <> — <a href={e.link} target="_blank" rel="noreferrer">출처</a></>}</div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="metrics">
         <Metric label="1주 / 3개월 / 1년"><Pct v={p.return_1w_pct} /> / <Pct v={p.return_3m_pct} /> / <Pct v={p.return_1y_pct} /></Metric>
@@ -129,7 +181,7 @@ export default function Dashboard({ data, period, onPeriod, dark }) {
                 : <p className="muted">차트 데이터가 없습니다.</p>}
             </>
           )}
-          {tab === '컨센서스·배당' && <Consensus a={data.analyst} cal={data.calendar} cur={cur} />}
+          {tab === '컨센서스·배당' && <Consensus a={data.analyst} cal={data.calendar} recs={data.recommendations} cur={cur} />}
           {tab === '기술적' && (
             <div className="tech-grid">
               <Metric label="RSI(14)" sub={t.RSI_state}>{t.RSI14 ?? '—'}</Metric>

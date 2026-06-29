@@ -4,6 +4,8 @@ import Dashboard from './Dashboard'
 import Compare from './Compare'
 import Portfolio from './Portfolio'
 import Screener from './Screener'
+import Ranking from './Ranking'
+import Watchlist from './Watchlist'
 import Chat from './Chat'
 
 export default function App() {
@@ -48,6 +50,8 @@ export default function App() {
           <button className={view === 'compare' ? 'active' : ''} onClick={() => setView('compare')}>종목 비교</button>
           <button className={view === 'portfolio' ? 'active' : ''} onClick={() => setView('portfolio')}>포트폴리오</button>
           <button className={view === 'screener' ? 'active' : ''} onClick={() => setView('screener')}>스크리너</button>
+          <button className={view === 'ranking' ? 'active' : ''} onClick={() => setView('ranking')}>랭킹</button>
+          <button className={view === 'watch' ? 'active' : ''} onClick={() => setView('watch')}>⭐ 관심</button>
         </div>
         {view === 'single' && (
           <div className="search">
@@ -79,6 +83,8 @@ export default function App() {
           {view === 'compare' && <Compare dark={dark} />}
           {view === 'portfolio' && <Portfolio />}
           {view === 'screener' && <Screener />}
+          {view === 'ranking' && <Ranking />}
+          {view === 'watch' && <Watchlist onPick={(q) => { setView('single'); setQuery(q); load(q) }} />}
         </section>
         <aside className="side">
           <Chat ticker={data?.name} />

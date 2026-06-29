@@ -170,8 +170,24 @@ button:disabled{opacity:.5;cursor:not-allowed;}
 .s-pos{background:#dcfce7;color:#15803d;} .s-neg{background:#fee2e2;color:#b91c1c;} .s-neu{background:var(--soft);color:var(--muted);}
 [data-theme="dark"] .s-pos{background:#14331f;color:#4ade80;} [data-theme="dark"] .s-neg{background:#3a1416;color:#fca5a5;}
 
+/* 애널리스트 등급변경 · AI 브리핑 */
+.recs{list-style:none;padding:0;margin:0;}
+.recs li{padding:7px 0;border-bottom:1px solid var(--line);font-size:.88rem;}
+.recs li:last-child{border:none;}
+.brief{background:linear-gradient(180deg,var(--soft),var(--card));border-left:3px solid var(--accent);}
+
 /* 히트맵 */
 .heat{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;}
 .heat-tile{border-radius:10px;padding:12px;min-height:64px;display:flex;flex-direction:column;justify-content:center;}
 .ht-name{font-size:.82rem;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .ht-ret{font-size:1.05rem;font-weight:800;margin-top:3px;}
+
+/* 북마크·랭킹 */
+.star{background:none;border:none;cursor:pointer;font-size:1.1rem;color:#f59e0b;padding:0 4px;}
+.seclink,.namelink{background:none;border:none;cursor:pointer;color:inherit;font:inherit;padding:0;text-align:left;}
+.seclink:hover,.namelink:hover{color:var(--accent-d);text-decoration:underline;}
+.bc-row{display:flex;align-items:center;gap:10px;margin:7px 0;}
+.bc-name{width:42px;font-weight:700;font-size:.85rem;}
+.bc-bar-wrap{flex:1;background:var(--soft);border-radius:6px;height:18px;overflow:hidden;}
+.bc-bar{height:100%;background:var(--accent);border-radius:6px;}
+.bc-val{width:80px;text-align:right;font-size:.82rem;font-weight:700;}
