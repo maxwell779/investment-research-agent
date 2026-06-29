@@ -8,43 +8,41 @@ Gemini function-calling 에이전트 루프 (google-genai 신 SDK).
 """
 import os
 import time
-from google import genai
-from google.genai import types
-from google.genai import errors as genai_errors
 import tools
+from prompts import SYSTEM
 
 # 일시적 과부하(503)에 대비해 여러 무료 모델로 순차 폴백
 MODELS = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-flash-latest"]
 
-SYSTEM = """당신은 한국·해외 주식을 다루는 투자 리서치 어시스턴트입니다. 규칙:
-1) 추측 금지. 반드시 제공된 도구로 실제 데이터를 조회한 뒤 답하세요.
-   - 한국 종목명이 들어오면 먼저 resolve_ticker로 티커를 구한 뒤 시세/재무/뉴스를 조회하세요.
-   - 한국 종목(.KS/.KQ)의 PER/PBR은 get_kr_fundamentals를, 해외 종목은 get_financials를 사용하세요.
-2) 답변의 모든 수치(주가·PER·등락률 등)는 도구가 반환한 값만 사용하고, 어떤 도구의 값인지 밝히세요.
-3) **날짜 규칙(중요)**: 도구가 'as_of'를 준 경우에만 그 날짜를 인용하세요. as_of가 없는 수치에는 날짜를 절대 지어내거나 붙이지 마세요('기준일 미제공'이면 날짜 언급 금지).
-4) 도구가 'error'나 빈 결과를 주면, 지어내지 말고 "해당 데이터를 찾지 못했습니다"라고 정직하게 답하세요.
-5) **비교 질문**(예: 'A vs B')이면 두 종목 각각에 대해 도구를 호출해 데이터를 모은 뒤, 표 형태로 핵심 지표를 나란히 비교하세요.
-6) 답변은 한국어로, 간결한 요약 + 근거 수치 순으로.
-7) 답변 끝에 반드시 줄바꿈 후 "※ 정보 제공용이며 투자 조언이 아닙니다."를 붙이세요.
-"""
-
 
 def build_agent():
-    """API 키로 클라이언트를 만들고 (client, config)를 반환한다."""
+    """LLM_PROVIDER(gemini|github)에 따라 백엔드를 만들어 (provider, obj)를 반환한다."""
+    provider = os.environ.get("LLM_PROVIDER", "gemini").lower()
+    if provider == "github":
+        import llm_github
+        return ("github", llm_github.build_client())
+    # 기본: Gemini
+    from google import genai
+    from google.genai import types
     key = os.environ.get("GEMINI_API_KEY")
     if not key:
         raise RuntimeError("GEMINI_API_KEY가 없습니다. .env를 만들고 키를 넣으세요(.env.example 참고).")
     client = genai.Client(api_key=key)
     config = types.GenerateContentConfig(system_instruction=SYSTEM, tools=tools.TOOLS)
-    return client, config
+    return ("gemini", (client, config))
 
 
 def ask(agent, question: str):
     """질문 1건을 처리하고 (답변텍스트, 근거리스트)를 반환한다.
 
-    503(과부하) 등 일시적 오류는 모델을 바꿔가며 재시도한다.
+    GitHub Models는 llm_github로 위임. Gemini는 503 등 일시 오류 시 모델을 바꿔 재시도한다.
     """
-    client, config = agent
+    provider, obj = agent
+    if provider == "github":
+        import llm_github
+        return llm_github.ask(obj, question)
+    from google.genai import errors as genai_errors
+    client, config = obj
     last_err = None
     for model in MODELS:
         for attempt in range(3):
