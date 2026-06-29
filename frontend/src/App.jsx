@@ -25,7 +25,8 @@ function fmtBig(v, cur) {
 function Pct({ v }) {
   if (v == null) return <span className="muted">—</span>
   const cls = v > 0 ? 'up' : v < 0 ? 'down' : 'flat'
-  return <span className={cls}>{v > 0 ? '+' : ''}{v}%</span>
+  const arrow = v > 0 ? '▲' : v < 0 ? '▼' : '–' // 색+형태 병행(색각 접근성)
+  return <span className={cls}>{arrow} {v > 0 ? '+' : ''}{v}%</span>
 }
 
 function Metric({ label, children, sub }) {
