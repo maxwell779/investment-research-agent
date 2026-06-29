@@ -184,7 +184,7 @@ function Research({ ticker, name }) {
   return (
     <div>
       <p className="muted" style={{ fontSize: '.84rem', marginTop: 0 }}>
-        뉴스·애널리스트·재무·개요를 <b>벡터DB로 검색</b>해, <b>근거 자료만으로</b> 종합합니다(출처 인용).
+        뉴스·애널리스트·재무·DART공시·증권사 리포트(미래에셋)·내 PDF를 <b>벡터DB로 검색</b>해, <b>근거 자료만으로</b> 종합합니다(출처 인용).
       </p>
       <div className="search" style={{ marginBottom: 12 }}>
         <input value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => e.key === 'Enter' && run()}
