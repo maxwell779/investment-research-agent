@@ -30,12 +30,24 @@ UNIVERSE = [
     ("2330.TW", "TSMC", "TW"), ("2317.TW", "폭스콘", "TW"),
     # 중국/홍콩
     ("0700.HK", "텐센트", "CN"), ("9988.HK", "알리바바", "CN"), ("1810.HK", "샤오미", "CN"), ("3690.HK", "메이투안", "CN"),
-    # 유럽
-    ("ASML.AS", "ASML", "EU"), ("MC.PA", "LVMH", "EU"), ("SAP.DE", "SAP", "EU"), ("SIE.DE", "Siemens", "EU"),
-    # 인도
-    ("RELIANCE.NS", "Reliance", "IN"), ("TCS.NS", "TCS", "IN"), ("INFY.NS", "Infosys", "IN"),
+    # 프랑스
+    ("MC.PA", "LVMH", "FR"), ("OR.PA", "로레알", "FR"), ("TTE.PA", "토탈에너지", "FR"), ("SAN.PA", "사노피", "FR"),
+    # 독일
+    ("SAP.DE", "SAP", "DE"), ("SIE.DE", "지멘스", "DE"), ("ALV.DE", "알리안츠", "DE"),
+    # 네덜란드
+    ("ASML.AS", "ASML", "NL"), ("PRX.AS", "Prosus", "NL"),
+    # 스위스
+    ("NESN.SW", "네슬레", "CH"), ("ROG.SW", "로슈", "CH"), ("NOVN.SW", "노바티스", "CH"),
+    # 캐나다
+    ("SHOP.TO", "쇼피파이", "CA"), ("RY.TO", "로열뱅크", "CA"), ("TD.TO", "TD뱅크", "CA"), ("ENB.TO", "엔브리지", "CA"),
     # 영국
-    ("AZN.L", "AstraZeneca", "UK"), ("SHEL.L", "Shell", "UK"), ("HSBA.L", "HSBC", "UK"),
+    ("AZN.L", "아스트라제네카", "UK"), ("SHEL.L", "쉘", "UK"), ("HSBA.L", "HSBC", "UK"),
+    # 인도
+    ("RELIANCE.NS", "릴라이언스", "IN"), ("TCS.NS", "TCS", "IN"), ("INFY.NS", "인포시스", "IN"),
+    # 호주
+    ("BHP.AX", "BHP", "AU"), ("CBA.AX", "커먼웰스은행", "AU"),
+    # 사우디
+    ("2222.SR", "아람코", "SA"),
 ]
 
 _FX = {}

@@ -35,6 +35,25 @@ function FinancialTrend({ trend, cur }) {
   )
 }
 
+function Profile({ pf }) {
+  if (!pf || pf.error) return <p className="muted">기업 개요 데이터가 없습니다.</p>
+  return (
+    <div className="profile">
+      <div className="metrics" style={{ marginBottom: 14 }}>
+        <Metric label="섹터">{pf.sector || '—'}</Metric>
+        <Metric label="산업">{pf.industry || '—'}</Metric>
+        <Metric label="직원수">{pf.employees ? pf.employees.toLocaleString() + '명' : '—'}</Metric>
+      </div>
+      {pf.summary && <p className="biz-summary">{pf.summary}</p>}
+      <div className="muted" style={{ fontSize: '.82rem', marginTop: 8 }}>
+        {pf.country && <>본사: {pf.country} </>}
+        {pf.website && <>· <a href={pf.website} target="_blank" rel="noreferrer">{pf.website.replace(/^https?:\/\//, '')}</a></>}
+      </div>
+      <p className="muted" style={{ fontSize: '.76rem', marginTop: 8 }}>※ 사업 요약은 yfinance 원문(영문)입니다. 한국어 종합은 상단 <b>🤖 AI 종합 브리핑</b>을 이용하세요.</p>
+    </div>
+  )
+}
+
 function Consensus({ a, cal, recs, cur }) {
   const noA = !a || a.error
   const noC = !cal || cal.error
@@ -161,7 +180,7 @@ export default function Dashboard({ data, period, onPeriod, dark }) {
 
       <div className="card">
         <div className="tabs">
-          {['차트', '컨센서스·배당', '기술적', '재무', '뉴스'].map(x => (
+          {['차트', '기업개요', '컨센서스·배당', '기술적', '재무', '뉴스'].map(x => (
             <button key={x} className={tab === x ? 'active' : ''} onClick={() => setTab(x)}>{x}</button>
           ))}
         </div>
@@ -181,6 +200,7 @@ export default function Dashboard({ data, period, onPeriod, dark }) {
                 : <p className="muted">차트 데이터가 없습니다.</p>}
             </>
           )}
+          {tab === '기업개요' && <Profile pf={data.profile} />}
           {tab === '컨센서스·배당' && <Consensus a={data.analyst} cal={data.calendar} recs={data.recommendations} cur={cur} />}
           {tab === '기술적' && (
             <div className="tech-grid">

@@ -53,6 +53,7 @@ def dashboard(query: str, period: str = "6mo"):
     is_kr = tk.endswith((".KS", ".KQ"))
     result = {
         "ticker": tk, "name": r.get("name"), "market": r.get("market"),
+        "profile": tools.get_profile(tk),
         "price": tools.get_price(tk),
         "technicals": tools.get_technicals(tk),
         "fundamentals": (tools.get_kr_fundamentals(tk) if is_kr else tools.get_financials(tk)),

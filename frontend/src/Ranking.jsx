@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { fmtBig, Pct } from './ui'
 import { isStock, toggleStock, isSector, toggleSector } from './bookmarks'
 
-export default function Ranking() {
+export default function Ranking({ onPick }) {
   const [data, setData] = useState(null)
   const [by, setBy] = useState('marketcap')
   const [country, setCountry] = useState('all')
@@ -64,7 +64,7 @@ export default function Ranking() {
               <tr key={r.ticker}>
                 <td><button className="star" onClick={() => { toggleStock(r.ticker, r.name); force(x => x + 1) }}>{isStock(r.ticker) ? '★' : '☆'}</button></td>
                 <td className="muted">{i + 1}</td>
-                <td><b>{r.name}</b><div className="muted" style={{ fontSize: '.72rem' }}>{r.ticker}</div></td>
+                <td><button className="namelink" onClick={() => onPick && onPick(r.name || r.ticker)}><b>{r.name}</b></button><div className="muted" style={{ fontSize: '.72rem' }}>{r.ticker}</div></td>
                 <td>{r.country}</td>
                 <td className="muted" style={{ fontSize: '.8rem' }}>
                   {r.sector ? <button className="seclink" onClick={() => { toggleSector(r.sector); force(x => x + 1) }} title="섹터 즐겨찾기">{isSector(r.sector) ? '★ ' : ''}{r.sector}</button> : '—'}

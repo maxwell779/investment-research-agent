@@ -191,3 +191,6 @@ button:disabled{opacity:.5;cursor:not-allowed;}
 .bc-bar-wrap{flex:1;background:var(--soft);border-radius:6px;height:18px;overflow:hidden;}
 .bc-bar{height:100%;background:var(--accent);border-radius:6px;}
 .bc-val{width:80px;text-align:right;font-size:.82rem;font-weight:700;}
+
+/* 기업개요 */
+.biz-summary{font-size:.9rem;line-height:1.6;color:var(--text);background:var(--soft);padding:14px 16px;border-radius:12px;}

@@ -249,6 +249,30 @@ def get_analyst(ticker: str) -> dict:
         return {"error": f"컨센서스 조회 실패: {e}"}
 
 
+def get_profile(ticker: str) -> dict:
+    """기업 개요: 섹터·산업·사업 요약·직원수·본사 국가·홈페이지(이 회사가 무엇을 하는지).
+
+    Args:
+        ticker: yfinance 호환 티커.
+
+    Returns:
+        sector/industry/summary/employees/country/website.
+    """
+    try:
+        info = yf.Ticker(ticker).info or {}
+        summary = info.get("longBusinessSummary")
+        out = {"sector": info.get("sector"), "industry": info.get("industry"),
+               "summary": summary, "employees": info.get("fullTimeEmployees"),
+               "country": info.get("country"), "website": info.get("website")}
+        if not (summary or out.get("industry")):
+            return {"error": f"{ticker} 기업 개요를 찾을 수 없습니다."}
+        EVIDENCE.append({"tool": "get_profile", "input": ticker, "source": "yfinance(기업개요)",
+                         "output": f"{out.get('sector')}/{out.get('industry')}"})
+        return out
+    except Exception as e:
+        return {"error": f"기업 개요 조회 실패: {e}"}
+
+
 def get_recommendations(ticker: str) -> dict:
     """최근 애널리스트 등급 변경 이력(증권사·상향/하향·등급)을 조회한다.
 
@@ -497,6 +521,6 @@ def get_naver_news(query: str, display: int = 6) -> dict:
         return {"error": f"네이버 뉴스 조회 실패: {e}", "news": []}
 
 
-TOOLS = [resolve_ticker, get_price, get_financials, get_kr_fundamentals,
+TOOLS = [resolve_ticker, get_profile, get_price, get_financials, get_kr_fundamentals,
          get_technicals, get_financial_trend, get_analyst, get_recommendations,
          get_calendar, get_naver_news, get_news]

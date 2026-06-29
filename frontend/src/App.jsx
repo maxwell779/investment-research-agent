@@ -83,7 +83,7 @@ export default function App() {
           {view === 'compare' && <Compare dark={dark} />}
           {view === 'portfolio' && <Portfolio />}
           {view === 'screener' && <Screener />}
-          {view === 'ranking' && <Ranking />}
+          {view === 'ranking' && <Ranking onPick={(q) => { setView('single'); setQuery(q); load(q) }} />}
           {view === 'watch' && <Watchlist onPick={(q) => { setView('single'); setQuery(q); load(q) }} />}
         </section>
         <aside className="side">

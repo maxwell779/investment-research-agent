@@ -44,6 +44,9 @@ TOOL_SCHEMAS = [
         "name": "get_calendar", "description": "다음 실적 발표일·배당(배당수익률·배당락일·배당성향).",
         "parameters": {"type": "object", "properties": {"ticker": {"type": "string"}}, "required": ["ticker"]}}},
     {"type": "function", "function": {
+        "name": "get_profile", "description": "기업 개요(이 회사가 무엇을 하는지): 섹터·산업·사업요약·직원수·본사국가.",
+        "parameters": {"type": "object", "properties": {"ticker": {"type": "string"}}, "required": ["ticker"]}}},
+    {"type": "function", "function": {
         "name": "get_recommendations", "description": "최근 애널리스트 등급 변경 이력(증권사·상향/하향·등급).",
         "parameters": {"type": "object", "properties": {"ticker": {"type": "string"}}, "required": ["ticker"]}}},
     {"type": "function", "function": {
@@ -53,7 +56,7 @@ TOOL_SCHEMAS = [
         "name": "get_news", "description": "해외 종목 관련 최신 뉴스(영어) 제목/출처/링크.",
         "parameters": {"type": "object", "properties": {"ticker": {"type": "string"}, "limit": {"type": "integer"}}, "required": ["ticker"]}}},
 ]
-DISPATCH = {"resolve_ticker": tools.resolve_ticker, "get_price": tools.get_price,
+DISPATCH = {"resolve_ticker": tools.resolve_ticker, "get_profile": tools.get_profile, "get_price": tools.get_price,
             "get_financials": tools.get_financials, "get_kr_fundamentals": tools.get_kr_fundamentals,
             "get_technicals": tools.get_technicals, "get_financial_trend": tools.get_financial_trend,
             "get_analyst": tools.get_analyst, "get_recommendations": tools.get_recommendations,

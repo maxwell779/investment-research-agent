@@ -1,6 +1,6 @@
 {
  "as_of": "2026-06-29",
- "count": 49,
+ "count": 63,
  "rows": [
   {
    "ticker": "005930.KS",
@@ -14,7 +14,7 @@
    "PBR": 4.49,
    "RSI": 50.2,
    "marketcap": 2120999940128768,
-   "marketcap_usd": 1374853370726,
+   "marketcap_usd": 1374185213620,
    "sector": "Technology"
   },
   {
@@ -29,7 +29,7 @@
    "PBR": 11.05,
    "RSI": 60.1,
    "marketcap": 1865498643922944,
-   "marketcap_usd": 1209234875568,
+   "marketcap_usd": 1208647206445,
    "sector": "Technology"
   },
   {
@@ -44,7 +44,7 @@
    "PBR": 4.23,
    "RSI": 50.9,
    "marketcap": 93717000093696,
-   "marketcap_usd": 60748296610,
+   "marketcap_usd": 60718773893,
    "sector": "Industrials"
   },
   {
@@ -59,7 +59,7 @@
    "PBR": 8.45,
    "RSI": 63.2,
    "marketcap": 67029298053120,
-   "marketcap_usd": 43449061276,
+   "marketcap_usd": 43427945716,
    "sector": "Healthcare"
   },
   {
@@ -74,7 +74,7 @@
    "PBR": 1.09,
    "RSI": 26.3,
    "marketcap": 130131536379904,
-   "marketcap_usd": 84352563168,
+   "marketcap_usd": 84311569149,
    "sector": "Consumer Cyclical"
   },
   {
@@ -89,7 +89,7 @@
    "PBR": 0.89,
    "RSI": 32.3,
    "marketcap": 54645036679168,
-   "marketcap_usd": 35421459213,
+   "marketcap_usd": 35404244941,
    "sector": "Consumer Cyclical"
   },
   {
@@ -104,7 +104,7 @@
    "PBR": 1.04,
    "RSI": 27.9,
    "marketcap": 30514274631680,
-   "marketcap_usd": 19779657952,
+   "marketcap_usd": 19770045349,
    "sector": "Communication Services"
   },
   {
@@ -119,7 +119,7 @@
    "PBR": 1.37,
    "RSI": 38.9,
    "marketcap": 15798517104640,
-   "marketcap_usd": 10240756768,
+   "marketcap_usd": 10235779922,
    "sector": "Communication Services"
   },
   {
@@ -134,7 +134,7 @@
    "PBR": 2.33,
    "RSI": 57.6,
    "marketcap": 41095434076160,
-   "marketcap_usd": 26638471313,
+   "marketcap_usd": 26625525435,
    "sector": "Healthcare"
   },
   {
@@ -149,7 +149,7 @@
    "PBR": 0.44,
    "RSI": 41.3,
    "marketcap": 25181718315008,
-   "marketcap_usd": 16323041623,
+   "marketcap_usd": 16315108882,
    "sector": "Basic Materials"
   },
   {
@@ -164,7 +164,7 @@
    "PBR": 0.92,
    "RSI": 48.9,
    "marketcap": 54515508183040,
-   "marketcap_usd": 35337497547,
+   "marketcap_usd": 35320324079,
    "sector": "Financial Services"
   },
   {
@@ -179,7 +179,7 @@
    "PBR": 0.69,
    "RSI": 45.0,
    "marketcap": 24108731465728,
-   "marketcap_usd": 15627520818,
+   "marketcap_usd": 15619926088,
    "sector": "Basic Materials"
   },
   {
@@ -194,7 +194,7 @@
    "PBR": 1.78,
    "RSI": 49.6,
    "marketcap": 40291138535424,
-   "marketcap_usd": 26117118901,
+   "marketcap_usd": 26104426392,
    "sector": "Industrials"
   },
   {
@@ -209,7 +209,7 @@
    "PBR": 0.88,
    "RSI": 35.9,
    "marketcap": 44768654524416,
-   "marketcap_usd": 29019489539,
+   "marketcap_usd": 29005386524,
    "sector": "Consumer Cyclical"
   },
   {
@@ -434,7 +434,7 @@
    "PBR": 0.91,
    "RSI": 44.6,
    "marketcap": 32823398367232,
-   "marketcap_usd": 202815129512,
+   "marketcap_usd": 202825171485,
    "sector": "Consumer Cyclical"
   },
   {
@@ -449,7 +449,7 @@
    "PBR": 2.4,
    "RSI": 39.6,
    "marketcap": 19430671122432,
-   "marketcap_usd": 120061732673,
+   "marketcap_usd": 120067677282,
    "sector": "Technology"
   },
   {
@@ -464,7 +464,7 @@
    "PBR": 1.93,
    "RSI": 37.9,
    "marketcap": 33589454438400,
-   "marketcap_usd": 207548574829,
+   "marketcap_usd": 207558851169,
    "sector": "Communication Services"
   },
   {
@@ -479,7 +479,7 @@
    "PBR": 1.63,
    "RSI": 52.4,
    "marketcap": 36210038800384,
-   "marketcap_usd": 223741113786,
+   "marketcap_usd": 223752191866,
    "sector": "Financial Services"
   },
   {
@@ -494,7 +494,7 @@
    "PBR": 5.46,
    "RSI": 60.8,
    "marketcap": 18965466185728,
-   "marketcap_usd": 117187240568,
+   "marketcap_usd": 117193042852,
    "sector": "Technology"
   },
   {
@@ -588,68 +588,278 @@
    "sector": "Consumer Cyclical"
   },
   {
-   "ticker": "ASML.AS",
-   "name": "ASML",
-   "country": "EU",
-   "currency": "USD",
-   "last": 1590.2,
-   "return_1m": 14.83,
-   "return_3m": 39.02,
-   "PER": 61.45,
-   "PBR": 29.42,
-   "RSI": 59.4,
-   "marketcap": 612891164672,
-   "marketcap_usd": 698929353072,
-   "sector": "Technology"
-  },
-  {
    "ticker": "MC.PA",
    "name": "LVMH",
-   "country": "EU",
+   "country": "FR",
    "currency": "USD",
-   "last": 492.25,
-   "return_1m": 4.06,
-   "return_3m": 9.77,
+   "last": 492.35,
+   "return_1m": 4.08,
+   "return_3m": 9.79,
    "PER": 22.52,
    "PBR": 3.62,
    "RSI": 50.0,
-   "marketcap": 242921553920,
-   "marketcap_usd": 277023090420,
+   "marketcap": 242970902528,
+   "marketcap_usd": 277174196036,
    "sector": "Consumer Cyclical"
+  },
+  {
+   "ticker": "OR.PA",
+   "name": "로레알",
+   "country": "FR",
+   "currency": "USD",
+   "last": 388.95,
+   "return_1m": 1.67,
+   "return_3m": 13.31,
+   "PER": 33.97,
+   "PBR": 5.94,
+   "RSI": 54.7,
+   "marketcap": 207076671488,
+   "marketcap_usd": 236227092793,
+   "sector": "Consumer Defensive"
+  },
+  {
+   "ticker": "TTE.PA",
+   "name": "토탈에너지",
+   "country": "FR",
+   "currency": "USD",
+   "last": 68.6,
+   "return_1m": -8.75,
+   "return_3m": -11.67,
+   "PER": 11.57,
+   "PBR": 1.38,
+   "RSI": 19.7,
+   "marketcap": 152507088896,
+   "marketcap_usd": 173975687272,
+   "sector": "Energy"
+  },
+  {
+   "ticker": "SAN.PA",
+   "name": "사노피",
+   "country": "FR",
+   "currency": "USD",
+   "last": 75.12,
+   "return_1m": -0.23,
+   "return_3m": -3.26,
+   "PER": 18.97,
+   "PBR": 1.24,
+   "RSI": 40.6,
+   "marketcap": 89909968896,
+   "marketcap_usd": 102566698666,
+   "sector": "Healthcare"
   },
   {
    "ticker": "SAP.DE",
    "name": "SAP",
-   "country": "EU",
+   "country": "DE",
    "currency": "USD",
-   "last": 137.46,
-   "return_1m": -11.46,
-   "return_3m": -1.94,
-   "PER": 22.03,
+   "last": 137.42,
+   "return_1m": -11.49,
+   "return_3m": -1.97,
+   "PER": 22.02,
    "PBR": 3.56,
    "RSI": 28.1,
-   "marketcap": 160492666880,
-   "marketcap_usd": 183022765380,
+   "marketcap": 160445956096,
+   "marketcap_usd": 183032117942,
    "sector": "Technology"
   },
   {
    "ticker": "SIE.DE",
-   "name": "Siemens",
-   "country": "EU",
+   "name": "지멘스",
+   "country": "DE",
    "currency": "USD",
-   "last": 267.9,
-   "return_1m": -0.7,
-   "return_3m": 30.75,
-   "PER": 27.73,
-   "PBR": 3.23,
-   "RSI": 54.0,
-   "marketcap": 204338937856,
-   "marketcap_usd": 233024213556,
+   "last": 267.05,
+   "return_1m": -1.02,
+   "return_3m": 30.33,
+   "PER": 27.64,
+   "PBR": 3.22,
+   "RSI": 53.1,
+   "marketcap": 203690606592,
+   "marketcap_usd": 232364367646,
    "sector": "Industrials"
   },
   {
+   "ticker": "ALV.DE",
+   "name": "알리안츠",
+   "country": "DE",
+   "currency": "USD",
+   "last": 409.1,
+   "return_1m": 7.21,
+   "return_3m": 21.95,
+   "PER": 13.21,
+   "PBR": 2.35,
+   "RSI": 93.6,
+   "marketcap": 155166015488,
+   "marketcap_usd": 177008914020,
+   "sector": "Financial Services"
+  },
+  {
+   "ticker": "ASML.AS",
+   "name": "ASML",
+   "country": "NL",
+   "currency": "USD",
+   "last": 1589.0,
+   "return_1m": 14.75,
+   "return_3m": 38.91,
+   "PER": 61.4,
+   "PBR": 29.4,
+   "RSI": 59.2,
+   "marketcap": 612428677120,
+   "marketcap_usd": 698640966651,
+   "sector": "Technology"
+  },
+  {
+   "ticker": "PRX.AS",
+   "name": "Prosus",
+   "country": "NL",
+   "currency": "USD",
+   "last": 38.72,
+   "return_1m": -0.77,
+   "return_3m": 0.0,
+   "PER": 7.62,
+   "PBR": 1.77,
+   "RSI": 43.2,
+   "marketcap": 82453372928,
+   "marketcap_usd": 94060429105,
+   "sector": "Consumer Cyclical"
+  },
+  {
+   "ticker": "NESN.SW",
+   "name": "네슬레",
+   "country": "CH",
+   "currency": "USD",
+   "last": 83.46,
+   "return_1m": 5.06,
+   "return_3m": 13.14,
+   "PER": 23.78,
+   "PBR": 6.54,
+   "RSI": 79.3,
+   "marketcap": 214677471232,
+   "marketcap_usd": 265548607908,
+   "sector": "Consumer Defensive"
+  },
+  {
+   "ticker": "NOVN.SW",
+   "name": "노바티스",
+   "country": "CH",
+   "currency": "USD",
+   "last": 125.58,
+   "return_1m": 6.59,
+   "return_3m": 4.98,
+   "PER": 22.15,
+   "PBR": 7.8,
+   "RSI": 68.7,
+   "marketcap": 239618179072,
+   "marketcap_usd": 296399401003,
+   "sector": "Healthcare"
+  },
+  {
+   "ticker": "SHOP.TO",
+   "name": "쇼피파이",
+   "country": "CA",
+   "currency": "USD",
+   "last": 165.7,
+   "return_1m": 4.6,
+   "return_3m": 6.61,
+   "PER": 113.49,
+   "PBR": 12.13,
+   "RSI": 61.4,
+   "marketcap": 215021371392,
+   "marketcap_usd": 151355281947,
+   "sector": "Technology"
+  },
+  {
+   "ticker": "RY.TO",
+   "name": "로열뱅크",
+   "country": "CA",
+   "currency": "USD",
+   "last": 288.01,
+   "return_1m": 10.54,
+   "return_3m": 31.9,
+   "PER": 18.73,
+   "PBR": 3.09,
+   "RSI": 85.2,
+   "marketcap": 400236675072,
+   "marketcap_usd": 281729831826,
+   "sector": "Financial Services"
+  },
+  {
+   "ticker": "TD.TO",
+   "name": "TD뱅크",
+   "country": "CA",
+   "currency": "USD",
+   "last": 170.03,
+   "return_1m": 8.87,
+   "return_3m": 35.08,
+   "PER": 19.96,
+   "PBR": 2.32,
+   "RSI": 87.4,
+   "marketcap": 280898207744,
+   "marketcap_usd": 197726519724,
+   "sector": "Financial Services"
+  },
+  {
+   "ticker": "ENB.TO",
+   "name": "엔브리지",
+   "country": "CA",
+   "currency": "USD",
+   "last": 79.79,
+   "return_1m": 4.19,
+   "return_3m": 6.56,
+   "PER": 27.05,
+   "PBR": 3.0,
+   "RSI": 66.9,
+   "marketcap": 174237138944,
+   "marketcap_usd": 122646930953,
+   "sector": "Energy"
+  },
+  {
+   "ticker": "AZN.L",
+   "name": "아스트라제네카",
+   "country": "UK",
+   "currency": "USD",
+   "last": 14258.0,
+   "return_1m": 3.3,
+   "return_3m": 3.09,
+   "PER": 28.29,
+   "PBR": 6.15,
+   "RSI": 62.7,
+   "marketcap": 221121921024,
+   "marketcap_usd": 292535750821,
+   "sector": "Healthcare"
+  },
+  {
+   "ticker": "SHEL.L",
+   "name": "쉘",
+   "country": "UK",
+   "currency": "USD",
+   "last": 2914.0,
+   "return_1m": -6.54,
+   "return_3m": -16.08,
+   "PER": 11.99,
+   "PBR": 1.25,
+   "RSI": 26.9,
+   "marketcap": 161552531456,
+   "marketcap_usd": 213727751946,
+   "sector": "Energy"
+  },
+  {
+   "ticker": "HSBA.L",
+   "name": "HSBC",
+   "country": "UK",
+   "currency": "USD",
+   "last": 1426.0,
+   "return_1m": 2.32,
+   "return_3m": 18.33,
+   "PER": 15.5,
+   "PBR": 1.87,
+   "RSI": 71.9,
+   "marketcap": 244533460992,
+   "marketcap_usd": 323508312884,
+   "sector": "Financial Services"
+  },
+  {
    "ticker": "RELIANCE.NS",
-   "name": "Reliance",
+   "name": "릴라이언스",
    "country": "IN",
    "currency": "USD",
    "last": 1301.0,
@@ -679,7 +889,7 @@
   },
   {
    "ticker": "INFY.NS",
-   "name": "Infosys",
+   "name": "인포시스",
    "country": "IN",
    "currency": "USD",
    "last": 1036.7,
@@ -693,49 +903,49 @@
    "sector": "Technology"
   },
   {
-   "ticker": "AZN.L",
-   "name": "AstraZeneca",
-   "country": "UK",
+   "ticker": "BHP.AX",
+   "name": "BHP",
+   "country": "AU",
    "currency": "USD",
-   "last": 14244.0,
-   "return_1m": 3.2,
-   "return_3m": 2.99,
-   "PER": 28.26,
-   "PBR": 6.15,
-   "RSI": 62.3,
-   "marketcap": 220904800256,
-   "marketcap_usd": 292167347348,
-   "sector": "Healthcare"
+   "last": 59.82,
+   "return_1m": -1.21,
+   "return_3m": 18.76,
+   "PER": 20.49,
+   "PBR": 4.15,
+   "RSI": 49.1,
+   "marketcap": 303926870016,
+   "marketcap_usd": 209749393583,
+   "sector": "Basic Materials"
   },
   {
-   "ticker": "SHEL.L",
-   "name": "Shell",
-   "country": "UK",
+   "ticker": "CBA.AX",
+   "name": "커먼웰스은행",
+   "country": "AU",
    "currency": "USD",
-   "last": 2913.5,
-   "return_1m": -6.56,
-   "return_3m": -16.09,
-   "PER": 11.99,
-   "PBR": 1.25,
-   "RSI": 26.8,
-   "marketcap": 161524809728,
-   "marketcap_usd": 213631732468,
-   "sector": "Energy"
-  },
-  {
-   "ticker": "HSBA.L",
-   "name": "HSBC",
-   "country": "UK",
-   "currency": "USD",
-   "last": 1428.0,
-   "return_1m": 2.47,
-   "return_3m": 18.49,
-   "PER": 15.52,
-   "PBR": 1.87,
-   "RSI": 72.1,
-   "marketcap": 244876427264,
-   "marketcap_usd": 323872075658,
+   "last": 163.61,
+   "return_1m": 1.36,
+   "return_3m": -5.77,
+   "PER": 26.3,
+   "PBR": 3.54,
+   "RSI": 57.9,
+   "marketcap": 273576165376,
+   "marketcap_usd": 188803427559,
    "sector": "Financial Services"
+  },
+  {
+   "ticker": "2222.SR",
+   "name": "아람코",
+   "country": "SA",
+   "currency": "USD",
+   "last": 26.22,
+   "return_1m": -3.6,
+   "return_3m": -3.67,
+   "PER": 17.03,
+   "PBR": 4.11,
+   "RSI": 30.9,
+   "marketcap": 6342812106752,
+   "marketcap_usd": 1689119361968,
+   "sector": "Energy"
   }
  ]
 }
