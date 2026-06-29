@@ -60,7 +60,7 @@ def dashboard(query: str, period: str = "6mo"):
         "analyst": tools.get_analyst(tk),
         "calendar": tools.get_calendar(tk),
         "history": tools.get_history(tk, period),
-        "news": tools.get_news(tk, 6),
+        "news": (tools.get_naver_news(r.get("name") or tk) if is_kr else tools.get_news(tk, 6)),
     }
     _DASH_CACHE[key] = (time.time(), result)
     return result
@@ -156,7 +156,9 @@ def news_sentiment(query: str):
     r = tools.resolve_ticker(query)
     if "error" in r:
         return {"error": r["error"]}
-    news = tools.get_news(r["ticker"], 6).get("news", [])
+    tk = r["ticker"]
+    news = (tools.get_naver_news(r.get("name") or tk) if tk.endswith((".KS", ".KQ"))
+            else tools.get_news(tk, 6)).get("news", [])
     if not news:
         return {"items": []}
     titles = [n["title"] for n in news]

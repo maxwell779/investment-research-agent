@@ -7,7 +7,9 @@
 
 각 도구는 호출될 때 EVIDENCE 에 '무엇을·어디서 가져왔는지'를 남긴다 → 답변 인용(citation)에 사용.
 """
+import os
 import re
+import html
 import requests
 import pandas as pd
 import yfinance as yf
@@ -434,5 +436,38 @@ def get_news(ticker: str, limit: int = 5) -> dict:
         return {"error": f"뉴스 조회 실패: {e}"}
 
 
+def get_naver_news(query: str, display: int = 6) -> dict:
+    """네이버 뉴스 검색 API로 한국어 뉴스를 조회한다(한국 종목에 적합).
+
+    Args:
+        query: 검색어(회사명 권장, 예: '삼성전자').
+        display: 가져올 개수(기본 6).
+
+    Returns:
+        {"news": [{"title","publisher","link"}, ...]}  (한국어 제목)
+    """
+    cid, csec = os.environ.get("NAVER_CLIENT_ID"), os.environ.get("NAVER_CLIENT_SECRET")
+    if not (cid and csec):
+        return {"error": "NAVER API 키가 없습니다(.env의 NAVER_CLIENT_ID/SECRET).", "news": []}
+    try:
+        r = requests.get("https://openapi.naver.com/v1/search/news.json",
+                         params={"query": query, "display": display, "sort": "date"},
+                         headers={"X-Naver-Client-Id": cid, "X-Naver-Client-Secret": csec}, timeout=15)
+        items = []
+        for it in r.json().get("items", []):
+            title = html.unescape(re.sub(r"<[^>]+>", "", it.get("title", "")))
+            items.append({"title": title, "publisher": it.get("pubDate", "")[:16],
+                          "link": it.get("originallink") or it.get("link")})
+        if not items:
+            return {"news": [], "note": "관련 뉴스를 찾지 못했습니다."}
+        for it in items:
+            EVIDENCE.append({"tool": "get_naver_news", "input": query, "source": "네이버 뉴스",
+                             "output": it["title"], "link": it["link"]})
+        return {"news": items}
+    except Exception as e:
+        return {"error": f"네이버 뉴스 조회 실패: {e}", "news": []}
+
+
 TOOLS = [resolve_ticker, get_price, get_financials, get_kr_fundamentals,
-         get_technicals, get_financial_trend, get_analyst, get_calendar, get_news]
+         get_technicals, get_financial_trend, get_analyst, get_calendar,
+         get_naver_news, get_news]

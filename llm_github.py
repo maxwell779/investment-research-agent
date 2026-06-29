@@ -44,13 +44,17 @@ TOOL_SCHEMAS = [
         "name": "get_calendar", "description": "다음 실적 발표일·배당(배당수익률·배당락일·배당성향).",
         "parameters": {"type": "object", "properties": {"ticker": {"type": "string"}}, "required": ["ticker"]}}},
     {"type": "function", "function": {
-        "name": "get_news", "description": "티커 관련 최신 뉴스 제목/출처/링크.",
+        "name": "get_naver_news", "description": "한국 종목의 한국어 뉴스(네이버 뉴스 API). 한국 종목엔 이걸 우선 사용. query=회사명.",
+        "parameters": {"type": "object", "properties": {"query": {"type": "string"}}, "required": ["query"]}}},
+    {"type": "function", "function": {
+        "name": "get_news", "description": "해외 종목 관련 최신 뉴스(영어) 제목/출처/링크.",
         "parameters": {"type": "object", "properties": {"ticker": {"type": "string"}, "limit": {"type": "integer"}}, "required": ["ticker"]}}},
 ]
 DISPATCH = {"resolve_ticker": tools.resolve_ticker, "get_price": tools.get_price,
             "get_financials": tools.get_financials, "get_kr_fundamentals": tools.get_kr_fundamentals,
             "get_technicals": tools.get_technicals, "get_financial_trend": tools.get_financial_trend,
-            "get_analyst": tools.get_analyst, "get_calendar": tools.get_calendar, "get_news": tools.get_news}
+            "get_analyst": tools.get_analyst, "get_calendar": tools.get_calendar,
+            "get_naver_news": tools.get_naver_news, "get_news": tools.get_news}
 
 
 def build_client():
