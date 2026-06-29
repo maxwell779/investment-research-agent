@@ -62,6 +62,7 @@ def dashboard(query: str, period: str = "6mo"):
     result = {
         "ticker": tk, "name": r.get("name"), "market": r.get("market"),
         "profile": tools.get_profile(tk),
+        "filings": (tools.get_dart_filings(tk).get("filings") if is_kr else []),
         "price": price,
         "technicals": technicals,
         "fundamentals": fundamentals,

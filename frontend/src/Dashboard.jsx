@@ -77,7 +77,7 @@ function FinBars({ trend, cur }) {
   )
 }
 
-function Profile({ pf }) {
+function Profile({ pf, filings }) {
   const [ko, setKo] = useState(null)
   const [kLoad, setKLoad] = useState(false)
   useEffect(() => { setKo(null) }, [pf])
@@ -108,6 +108,16 @@ function Profile({ pf }) {
         {pf.country && <>본사: {pf.country} </>}
         {pf.website && <>· <a href={pf.website} target="_blank" rel="noreferrer">{pf.website.replace(/^https?:\/\//, '')}</a></>}
       </div>
+      {filings && filings.length > 0 && (
+        <div style={{ marginTop: 14 }}>
+          <div className="m-label" style={{ marginBottom: 6 }}>📑 DART 공시 (공개 법정공시)</div>
+          <ul className="news">
+            {filings.map((f, i) => (
+              <li key={i}><a href={f.link} target="_blank" rel="noreferrer">{f.title}</a> <span className="muted">— {f.date}</span></li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   )
 }
@@ -307,7 +317,7 @@ export default function Dashboard({ data, period, onPeriod, dark }) {
             </>
           )}
           {tab === '📚 리서치' && <Research ticker={data.ticker} name={data.name} />}
-          {tab === '기업개요' && <Profile pf={data.profile} />}
+          {tab === '기업개요' && <Profile pf={data.profile} filings={data.filings} />}
           {tab === '컨센서스·배당' && <Consensus a={data.analyst} cal={data.calendar} recs={data.recommendations} cur={cur} />}
           {tab === '기술적' && (
             <div className="tech-grid">

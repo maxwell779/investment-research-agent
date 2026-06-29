@@ -7,3 +7,5 @@ venv/
 *.log
 dart_corp.json
 rag.db
+reports/*.pdf
+reports/**/*.pdf

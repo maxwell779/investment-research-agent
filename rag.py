@@ -28,7 +28,11 @@ def _client():
 def _conn():
     c = sqlite3.connect(DB)
     c.execute("""CREATE TABLE IF NOT EXISTS docs(
-        ticker TEXT, source TEXT, title TEXT, text TEXT, link TEXT, date TEXT, emb BLOB, ts REAL)""")
+        ticker TEXT, source TEXT, title TEXT, text TEXT, link TEXT, date TEXT, emb BLOB, ts REAL, kind TEXT)""")
+    try:
+        c.execute("ALTER TABLE docs ADD COLUMN kind TEXT DEFAULT 'auto'")  # 기존 DB 호환
+    except Exception:
+        pass
     return c
 
 
@@ -65,27 +69,63 @@ def _gather_docs(ticker, name):
     if not pf.get("error") and pf.get("summary"):
         docs.append({"source": "기업개요", "title": "사업", "text": pf["summary"][:800],
                      "link": pf.get("website"), "date": ""})
+    if is_kr:
+        for fl in (tools.get_dart_filings(ticker).get("filings") or [])[:5]:
+            docs.append({"source": "DART 공시", "title": fl.get("title"),
+                         "text": f"{fl.get('corp')} {fl.get('title')} ({fl.get('date')}) — 공개 법정공시",
+                         "link": fl.get("link"), "date": fl.get("date", "")})
     return docs
 
 
 def ingest(ticker, name):
+    """자동 코퍼스(뉴스·애널·재무·개요·공시) 갱신. PDF/리포트(kind='report')는 보존."""
     docs = _gather_docs(ticker, name)
     if not docs:
         return 0
     embs = embed([d["text"] for d in docs])
     c = _conn()
-    c.execute("DELETE FROM docs WHERE ticker=?", (ticker,))  # 종목별 코퍼스 갱신
+    c.execute("DELETE FROM docs WHERE ticker=? AND (kind='auto' OR kind IS NULL)", (ticker,))
     for d, e in zip(docs, embs):
-        c.execute("INSERT INTO docs(ticker,source,title,text,link,date,emb,ts) VALUES(?,?,?,?,?,?,?,?)",
+        c.execute("INSERT INTO docs(ticker,source,title,text,link,date,emb,ts,kind) VALUES(?,?,?,?,?,?,?,?,'auto')",
                   (ticker, d["source"], d["title"], d["text"], d["link"], d["date"], e.tobytes(), time.time()))
     c.commit()
     c.close()
     return len(docs)
 
 
+def _chunks(text, size=900):
+    text = " ".join((text or "").split())
+    return [text[i:i + size] for i in range(0, len(text), size)] if text else []
+
+
+def ingest_pdf(path, ticker, source=None):
+    """리포트 PDF(사용자 보유분)를 텍스트 추출→청킹→임베딩→저장(kind='report', 영속).
+    화면엔 요약+출처만 노출(전문 재배포 아님)."""
+    from pypdf import PdfReader
+    src = source or ("리포트·" + os.path.basename(path))
+    try:
+        reader = PdfReader(path)
+        text = "\n".join((p.extract_text() or "") for p in reader.pages)
+    except Exception as e:
+        return {"error": f"PDF 읽기 실패: {e}", "chunks": 0}
+    chunks = _chunks(text)[:40]  # 비용/용량 제한
+    if not chunks:
+        return {"error": "PDF에서 텍스트를 추출하지 못했습니다(스캔본일 수 있음).", "chunks": 0}
+    embs = embed(chunks)
+    c = _conn()
+    fn = os.path.basename(path)
+    c.execute("DELETE FROM docs WHERE ticker=? AND kind='report' AND title=?", (ticker, fn))  # 동일 파일 갱신
+    for ch, e in zip(chunks, embs):
+        c.execute("INSERT INTO docs(ticker,source,title,text,link,date,emb,ts,kind) VALUES(?,?,?,?,?,?,?,?,'report')",
+                  (ticker, src, fn, ch, None, "", e.tobytes(), time.time()))
+    c.commit()
+    c.close()
+    return {"chunks": len(chunks), "file": fn}
+
+
 def _fresh(ticker, ttl=3600):
     c = _conn()
-    row = c.execute("SELECT MAX(ts) FROM docs WHERE ticker=?", (ticker,)).fetchone()
+    row = c.execute("SELECT MAX(ts) FROM docs WHERE ticker=? AND (kind='auto' OR kind IS NULL)", (ticker,)).fetchone()
     c.close()
     return bool(row and row[0] and (time.time() - row[0] < ttl))
 

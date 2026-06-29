@@ -705,6 +705,41 @@ def get_dart_financials(ticker: str) -> dict:
     return out
 
 
+def get_dart_filings(ticker: str, limit: int = 5) -> dict:
+    """한국 기업의 최근 DART 정기공시(사업/반기/분기보고서) 목록 + 원문 링크(공개 법정 공시).
+
+    Args:
+        ticker: 한국 티커.
+        limit: 개수(기본 5).
+
+    Returns:
+        {"filings": [{"title","date","corp","link"}, ...]}
+    """
+    if not ticker.endswith((".KS", ".KQ")):
+        return {"error": "DART는 한국 종목 전용입니다.", "filings": []}
+    key = os.environ.get("DART_API_KEY")
+    corp = _dart_corp_map().get(ticker.split(".")[0]) if key else None
+    if not corp:
+        return {"error": "DART corp_code/키 없음", "filings": []}
+    import datetime
+    try:
+        bgn = (datetime.date.today() - datetime.timedelta(days=420)).strftime("%Y%m%d")
+        d = requests.get("https://opendart.fss.or.kr/api/list.json",
+                         params={"crtfc_key": key, "corp_code": corp, "bgn_de": bgn,
+                                 "pblntf_ty": "A", "page_count": str(limit)}, timeout=15).json()
+        if d.get("status") != "000":
+            return {"error": d.get("message"), "filings": []}
+        out = [{"title": it.get("report_nm"), "date": it.get("rcept_dt"), "corp": it.get("corp_name"),
+                "link": f"https://dart.fss.or.kr/dsaf001/main.do?rcpNo={it.get('rcept_no')}"}
+               for it in d.get("list", [])[:limit]]
+        if out:
+            EVIDENCE.append({"tool": "get_dart_filings", "input": ticker, "source": "DART 공시",
+                             "output": f"{len(out)}건 (최근 {out[0]['title']})"})
+        return {"filings": out}
+    except Exception as e:
+        return {"error": str(e), "filings": []}
+
+
 def get_naver_news(query: str, display: int = 6) -> dict:
     """네이버 뉴스 검색 API로 한국어 뉴스를 조회한다(한국 종목에 적합).
 
@@ -739,4 +774,4 @@ def get_naver_news(query: str, display: int = 6) -> dict:
 
 TOOLS = [resolve_ticker, get_profile, get_price, get_financials, get_kr_fundamentals,
          get_technicals, get_financial_trend, get_dart_financials, get_analyst, get_recommendations,
-         get_calendar, get_naver_news, get_news]
+         get_calendar, get_dart_filings, get_naver_news, get_news]

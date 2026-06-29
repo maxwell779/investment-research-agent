@@ -53,6 +53,9 @@ TOOL_SCHEMAS = [
         "name": "get_recommendations", "description": "최근 애널리스트 등급 변경 이력(증권사·상향/하향·등급).",
         "parameters": {"type": "object", "properties": {"ticker": {"type": "string"}}, "required": ["ticker"]}}},
     {"type": "function", "function": {
+        "name": "get_dart_filings", "description": "한국 기업 최근 DART 정기공시(사업/반기/분기보고서) 목록 + 원문 링크.",
+        "parameters": {"type": "object", "properties": {"ticker": {"type": "string"}}, "required": ["ticker"]}}},
+    {"type": "function", "function": {
         "name": "get_naver_news", "description": "한국 종목의 한국어 뉴스(네이버 뉴스 API). 한국 종목엔 이걸 우선 사용. query=회사명.",
         "parameters": {"type": "object", "properties": {"query": {"type": "string"}}, "required": ["query"]}}},
     {"type": "function", "function": {
@@ -64,7 +67,7 @@ DISPATCH = {"resolve_ticker": tools.resolve_ticker, "get_profile": tools.get_pro
             "get_technicals": tools.get_technicals, "get_financial_trend": tools.get_financial_trend,
             "get_dart_financials": tools.get_dart_financials,
             "get_analyst": tools.get_analyst, "get_recommendations": tools.get_recommendations,
-            "get_calendar": tools.get_calendar,
+            "get_calendar": tools.get_calendar, "get_dart_filings": tools.get_dart_filings,
             "get_naver_news": tools.get_naver_news, "get_news": tools.get_news}
 
 
