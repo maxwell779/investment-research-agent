@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import PriceChart from './PriceChart'
 import { fmtPrice, fmtBig, Pct, Metric } from './ui'
 
@@ -68,7 +68,23 @@ function Consensus({ a, cal, cur }) {
 export default function Dashboard({ data, period, onPeriod, dark }) {
   const [tab, setTab] = useState('차트')
   const [showMA, setShowMA] = useState(true)
+  const [senti, setSenti] = useState(null)
+  const [sLoad, setSLoad] = useState(false)
   const p = data.price || {}, t = data.technicals || {}, f = data.fundamentals || {}, cur = p.currency
+
+  useEffect(() => { setSenti(null) }, [data.ticker])
+
+  async function analyzeSentiment() {
+    setSLoad(true)
+    try {
+      const r = await fetch(`/api/news_sentiment?query=${encodeURIComponent(data.ticker)}`)
+      const d = await r.json()
+      const m = {}; (d.items || []).forEach(x => { m[x.title] = x.sentiment })
+      setSenti(m)
+    } catch { /* noop */ }
+    setSLoad(false)
+  }
+  const sCls = s => s === '긍정' ? 's-pos' : s === '부정' ? 's-neg' : 's-neu'
 
   return (
     <>
@@ -126,12 +142,22 @@ export default function Dashboard({ data, period, onPeriod, dark }) {
           )}
           {tab === '재무' && <FinancialTrend trend={data.financial_trend} cur={cur} />}
           {tab === '뉴스' && (
-            <ul className="news">
-              {(data.news?.news || []).map((n, i) => (
-                <li key={i}><a href={n.link} target="_blank" rel="noreferrer">{n.title}</a> <span className="muted">— {n.publisher}</span></li>
-              ))}
-              {(!data.news?.news || data.news.news.length === 0) && <li className="muted">뉴스가 없습니다.</li>}
-            </ul>
+            <>
+              {(data.news?.news?.length > 0) && (
+                <button className="senti-btn" onClick={analyzeSentiment} disabled={sLoad}>
+                  {sLoad ? '🤖 분석 중…' : '🤖 AI 감성 분석'}
+                </button>
+              )}
+              <ul className="news">
+                {(data.news?.news || []).map((n, i) => (
+                  <li key={i}>
+                    {senti && senti[n.title] && <span className={`badge ${sCls(senti[n.title])}`}>{senti[n.title]}</span>}
+                    <a href={n.link} target="_blank" rel="noreferrer">{n.title}</a> <span className="muted">— {n.publisher}</span>
+                  </li>
+                ))}
+                {(!data.news?.news || data.news.news.length === 0) && <li className="muted">뉴스가 없습니다.</li>}
+              </ul>
+            </>
           )}
         </div>
       </div>

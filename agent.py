@@ -63,6 +63,22 @@ def ask(agent, question: str):
     raise RuntimeError(f"무료 한도(분당 5요청) 소진 또는 일시 과부하입니다. 잠시 후 다시 시도하세요. 마지막 오류: {last_err}")
 
 
+def quick_complete(prompt: str) -> str:
+    """도구 없이 단순 1회 LLM 완성(감성분석 등). 프로바이더 자동 분기."""
+    provider = os.environ.get("LLM_PROVIDER", "gemini").lower()
+    if provider == "github":
+        import llm_github
+        return llm_github.complete(prompt)
+    from google import genai
+    client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY", ""))
+    for model in MODELS:
+        try:
+            return client.models.generate_content(model=model, contents=prompt).text or ""
+        except Exception:
+            continue
+    return ""
+
+
 if __name__ == "__main__":  # 터미널 빠른 테스트: python agent.py "삼성전자 어때?"
     import sys
     from dotenv import load_dotenv

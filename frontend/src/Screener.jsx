@@ -5,6 +5,7 @@ export default function Screener() {
   const [f, setF] = useState({ market: 'all', per_max: '', ret1m_min: '', rsi_min: '', rsi_max: '', sort: 'marketcap' })
   const [res, setRes] = useState(null)
   const [loading, setLoading] = useState(false)
+  const [mode, setMode] = useState('table')  // table | heat
 
   async function run() {
     setLoading(true)
@@ -18,6 +19,11 @@ export default function Screener() {
   useEffect(() => { run() }, [])  // 최초 1회
 
   const rows = res?.rows || []
+  const tileColor = (r) => {
+    if (r == null) return 'var(--soft)'
+    const m = Math.min(Math.abs(r), 15) / 15
+    return r > 0 ? `rgba(240,68,82,${0.15 + m * 0.7})` : `rgba(49,130,246,${0.15 + m * 0.7})`
+  }
   return (
     <div>
       <div className="card">
@@ -40,6 +46,26 @@ export default function Screener() {
         </div>
       </div>
 
+      <div className="tabs" style={{ marginBottom: 14 }}>
+        <button className={mode === 'table' ? 'active' : ''} onClick={() => setMode('table')}>표</button>
+        <button className={mode === 'heat' ? 'active' : ''} onClick={() => setMode('heat')}>히트맵</button>
+      </div>
+
+      {mode === 'heat' && (
+        <div className="card">
+          <div className="heat">
+            {rows.map((r, i) => (
+              <div key={i} className="heat-tile" style={{ background: tileColor(r.return_1m), color: Math.abs(r.return_1m || 0) > 7 ? '#fff' : 'var(--text)' }}>
+                <div className="ht-name">{r.name}</div>
+                <div className="ht-ret">{r.return_1m > 0 ? '+' : ''}{r.return_1m ?? '—'}%</div>
+              </div>
+            ))}
+          </div>
+          <div className="legend" style={{ marginTop: 12 }}><span className="muted">1개월 등락 · 상승=빨강 / 하락=파랑 (한국 관례)</span></div>
+        </div>
+      )}
+
+      {mode === 'table' && (
       <div className="card" style={{ overflowX: 'auto' }}>
         <table className="cmp-table">
           <thead><tr><th>종목</th><th>시장</th><th>현재가</th><th>1개월</th><th>3개월</th><th>PER</th><th>PBR</th><th>RSI</th><th>시총</th></tr></thead>
@@ -61,6 +87,7 @@ export default function Screener() {
           </tbody>
         </table>
       </div>
+      )}
       <div className="disclaimer muted">※ 큐레이션된 대형주 유니버스의 일배치 데이터입니다(실시간 전체 스캔은 무료 데이터로 제한). 투자 조언 아님.</div>
     </div>
   )

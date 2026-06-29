@@ -149,6 +149,38 @@ def quotes(tickers: str):
     return {"quotes": out}
 
 
+@app.get("/api/news_sentiment")
+def news_sentiment(query: str):
+    """종목 뉴스 헤드라인을 LLM으로 긍정/부정/중립 분류(온디맨드)."""
+    import re as _re
+    r = tools.resolve_ticker(query)
+    if "error" in r:
+        return {"error": r["error"]}
+    news = tools.get_news(r["ticker"], 6).get("news", [])
+    if not news:
+        return {"items": []}
+    titles = [n["title"] for n in news]
+    prompt = ("다음 뉴스 헤드라인을 투자 관점에서 긍정/부정/중립 중 하나로 분류해 "
+              'JSON 배열로만 답하세요. 형식: [{"i":0,"s":"긍정"}]. 헤드라인:\n'
+              + "\n".join(f"{i}. {t}" for i, t in enumerate(titles)))
+    from agent import quick_complete
+    try:
+        raw = quick_complete(prompt)
+    except Exception as e:
+        return {"error": f"감성분석 실패: {e}", "items": []}
+    senti = {}
+    m = _re.search(r"\[.*\]", raw or "", _re.S)
+    if m:
+        try:
+            for o in _json.loads(m.group(0)):
+                senti[o.get("i")] = o.get("s")
+        except Exception:
+            pass
+    items = [{"title": n["title"], "publisher": n.get("publisher"), "link": n.get("link"),
+              "sentiment": senti.get(i, "중립")} for i, n in enumerate(news)]
+    return {"items": items}
+
+
 class ChatReq(BaseModel):
     question: str
 

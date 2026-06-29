@@ -162,3 +162,16 @@ button:disabled{opacity:.5;cursor:not-allowed;}
 .scr-filters select{width:auto;}
 .scr-filters input:focus,.scr-filters select:focus{border-color:var(--accent);}
 .scr-filters button{background:var(--accent);color:#fff;border:none;border-radius:9px;padding:9px 18px;font-weight:800;cursor:pointer;}
+
+/* 뉴스 감성 배지 */
+.senti-btn{background:var(--soft);border:1px solid var(--line2);color:var(--accent-d);border-radius:10px;padding:8px 14px;font-weight:700;cursor:pointer;margin-bottom:12px;font-size:.85rem;}
+.senti-btn:hover{border-color:var(--accent);}
+.badge{display:inline-block;font-size:.72rem;font-weight:800;padding:2px 8px;border-radius:999px;margin-right:8px;vertical-align:middle;}
+.s-pos{background:#dcfce7;color:#15803d;} .s-neg{background:#fee2e2;color:#b91c1c;} .s-neu{background:var(--soft);color:var(--muted);}
+[data-theme="dark"] .s-pos{background:#14331f;color:#4ade80;} [data-theme="dark"] .s-neg{background:#3a1416;color:#fca5a5;}
+
+/* 히트맵 */
+.heat{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;}
+.heat-tile{border-radius:10px;padding:12px;min-height:64px;display:flex;flex-direction:column;justify-content:center;}
+.ht-name{font-size:.82rem;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.ht-ret{font-size:1.05rem;font-weight:800;margin-top:3px;}

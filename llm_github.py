@@ -60,6 +60,13 @@ def build_client():
     return OpenAI(base_url=BASE_URL, api_key=tok)
 
 
+def complete(prompt: str) -> str:
+    """도구 없이 단순 1회 완성(감성분석 등)."""
+    c = build_client()
+    r = c.chat.completions.create(model=MODEL, messages=[{"role": "user", "content": prompt}], temperature=0)
+    return r.choices[0].message.content or ""
+
+
 def ask(client, question: str, max_rounds: int = 8):
     """수동 tool-call 루프로 질문을 처리하고 (답변, EVIDENCE)를 반환."""
     tools.EVIDENCE.clear()
