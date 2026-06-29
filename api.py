@@ -57,11 +57,41 @@ def dashboard(query: str, period: str = "6mo"):
         "technicals": tools.get_technicals(tk),
         "fundamentals": (tools.get_kr_fundamentals(tk) if is_kr else tools.get_financials(tk)),
         "financial_trend": tools.get_financial_trend(tk),
+        "analyst": tools.get_analyst(tk),
         "history": tools.get_history(tk, period),
         "news": tools.get_news(tk, 6),
     }
     _DASH_CACHE[key] = (time.time(), result)
     return result
+
+
+@app.get("/api/compare")
+def compare(tickers: str, period: str = "6mo"):
+    """2~4개 종목 비교: 핵심 지표 + 정규화(100 기준) 가격 시계열."""
+    syms = [s.strip() for s in tickers.split(",") if s.strip()][:4]
+    items = []
+    for q in syms:
+        r = tools.resolve_ticker(q)
+        if "error" in r:
+            items.append({"query": q, "error": r["error"]})
+            continue
+        tk = r["ticker"]
+        is_kr = tk.endswith((".KS", ".KQ"))
+        price = tools.get_price(tk)
+        tech = tools.get_technicals(tk)
+        fund = tools.get_kr_fundamentals(tk) if is_kr else tools.get_financials(tk)
+        candles = tools.get_history(tk, period).get("candles", [])
+        base = candles[0]["c"] if candles else None
+        norm = [{"t": c["t"], "v": round(c["c"] / base * 100, 2)} for c in candles] if base else []
+        items.append({
+            "query": q, "ticker": tk, "name": r.get("name"), "currency": price.get("currency"),
+            "last": price.get("last_close"),
+            "return_1m": price.get("return_1m_pct"), "return_3m": price.get("return_3m_pct"), "return_1y": price.get("return_1y_pct"),
+            "PER": fund.get("PER"), "PBR": fund.get("PBR"), "RSI": tech.get("RSI14"),
+            "marketcap": fund.get("시가총액") or fund.get("marketCap"),
+            "norm": norm,
+        })
+    return {"items": items, "period": period}
 
 
 class ChatReq(BaseModel):

@@ -110,3 +110,36 @@ body{margin:0;background:var(--bg);color:var(--text);
 .chat-input input:focus{border-color:var(--accent);}
 .chat-input button{background:var(--accent);color:#fff;border:none;border-radius:12px;padding:11px 18px;font-weight:800;cursor:pointer;}
 button:disabled{opacity:.5;cursor:not-allowed;}
+
+/* 뷰 전환(세그먼트) · 테마 버튼 */
+.viewtabs{display:flex;gap:4px;background:var(--soft);padding:4px;border-radius:11px;}
+.viewtabs button{border:none;background:none;padding:8px 14px;font-weight:700;color:var(--muted);cursor:pointer;border-radius:8px;font-size:.86rem;}
+.viewtabs button.active{background:var(--card);color:var(--text);box-shadow:0 1px 3px rgba(11,15,25,.10);}
+.theme-btn{margin-left:auto;border:1px solid var(--line2);background:var(--soft);color:var(--text);
+  width:40px;height:40px;border-radius:11px;font-size:1.1rem;cursor:pointer;}
+.theme-btn:hover{border-color:var(--accent);}
+
+/* 차트 컨트롤 */
+.chart-controls{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px;}
+.period{display:flex;gap:4px;background:var(--soft);padding:4px;border-radius:10px;}
+.period button{border:none;background:none;padding:6px 12px;font-weight:700;color:var(--muted);cursor:pointer;border-radius:7px;font-size:.82rem;}
+.period button.active{background:var(--card);color:var(--text);box-shadow:0 1px 2px rgba(11,15,25,.08);}
+.ma-toggle{font-size:.84rem;color:var(--muted);font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px;}
+.rsi-label{font-size:.76rem;margin:10px 0 2px;font-weight:700;}
+
+/* 비교 */
+.cmp-legend{display:flex;gap:16px;flex-wrap:wrap;font-size:.85rem;font-weight:600;margin-bottom:12px;align-items:center;}
+.cmp-legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:middle;}
+.cmp-table{width:100%;border-collapse:collapse;font-size:.9rem;}
+.cmp-table th,.cmp-table td{text-align:right;padding:11px 12px;border-bottom:1px solid var(--line);}
+.cmp-table th:first-child,.cmp-table td:first-child{text-align:left;}
+.cmp-table th{font-size:.76rem;color:var(--muted);font-weight:700;}
+.cmp-table tbody tr:hover{background:var(--soft);}
+
+/* ── 다크 모드 ── */
+[data-theme="dark"]{
+  --bg:#0b1220; --card:#0f172a; --line:#1e293b; --line2:#334155;
+  --text:#e7edf5; --muted:#94a3b8; --soft:#1e293b;
+}
+[data-theme="dark"] .error{background:#2a1416;border-color:#7f1d2e;color:#fca5a5;}
+[data-theme="dark"] .search input,[data-theme="dark"] .chat-input input{background:#0b1220;color:var(--text);}

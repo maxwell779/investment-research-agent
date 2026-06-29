@@ -38,13 +38,16 @@ TOOL_SCHEMAS = [
         "name": "get_financial_trend", "description": "최근 연간 매출·영업이익·순이익 추이와 전년대비 성장률.",
         "parameters": {"type": "object", "properties": {"ticker": {"type": "string"}}, "required": ["ticker"]}}},
     {"type": "function", "function": {
+        "name": "get_analyst", "description": "애널리스트 컨센서스: 목표주가(평균/고/저)·상승여력·투자의견·애널리스트 수.",
+        "parameters": {"type": "object", "properties": {"ticker": {"type": "string"}}, "required": ["ticker"]}}},
+    {"type": "function", "function": {
         "name": "get_news", "description": "티커 관련 최신 뉴스 제목/출처/링크.",
         "parameters": {"type": "object", "properties": {"ticker": {"type": "string"}, "limit": {"type": "integer"}}, "required": ["ticker"]}}},
 ]
 DISPATCH = {"resolve_ticker": tools.resolve_ticker, "get_price": tools.get_price,
             "get_financials": tools.get_financials, "get_kr_fundamentals": tools.get_kr_fundamentals,
             "get_technicals": tools.get_technicals, "get_financial_trend": tools.get_financial_trend,
-            "get_news": tools.get_news}
+            "get_analyst": tools.get_analyst, "get_news": tools.get_news}
 
 
 def build_client():

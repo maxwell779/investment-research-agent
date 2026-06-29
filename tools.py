@@ -208,6 +208,45 @@ def get_financial_trend(ticker: str) -> dict:
         return {"error": f"재무 추세 조회 실패: {e}"}
 
 
+_REC_KR = {"strong_buy": "적극 매수", "buy": "매수", "hold": "보유",
+           "sell": "매도", "strong_sell": "적극 매도", "underperform": "시장수익률 하회",
+           "outperform": "시장수익률 상회", "none": "의견 없음"}
+
+
+def get_analyst(ticker: str) -> dict:
+    """애널리스트 컨센서스: 목표주가(평균/고/저), 상승여력, 투자의견, 애널리스트 수.
+
+    Args:
+        ticker: yfinance 호환 티커. resolve_ticker 결과를 사용할 것.
+
+    Returns:
+        target_mean/high/low, upside_pct, recommendation(+한글), num_analysts 등.
+        (yfinance 커버리지 한계로 한국 종목 등은 비어 있을 수 있음)
+    """
+    try:
+        info = yf.Ticker(ticker).info or {}
+        out = {}
+        for k, label in {"targetMeanPrice": "target_mean", "targetHighPrice": "target_high",
+                         "targetLowPrice": "target_low", "numberOfAnalystOpinions": "num_analysts",
+                         "recommendationKey": "recommendation", "recommendationMean": "rec_mean"}.items():
+            if info.get(k) is not None:
+                out[label] = info.get(k)
+        last = info.get("currentPrice") or info.get("regularMarketPrice")
+        if out.get("target_mean") and last:
+            out["upside_pct"] = round((out["target_mean"] / last - 1) * 100, 1)
+        if out.get("recommendation"):
+            out["recommendation_kr"] = _REC_KR.get(str(out["recommendation"]).lower(), out["recommendation"])
+        out["currency"] = "KRW" if ticker.endswith((".KS", ".KQ")) else "USD"
+        if not out.get("target_mean") and not out.get("recommendation"):
+            EVIDENCE.append({"tool": "get_analyst", "input": ticker, "source": "yfinance", "output": "컨센서스 없음"})
+            return {"error": f"{ticker} 애널리스트 컨센서스가 없습니다(커버리지 제한)."}
+        EVIDENCE.append({"tool": "get_analyst", "input": ticker, "source": "yfinance(애널리스트)",
+                         "output": f"목표가 {out.get('target_mean')}, 의견 {out.get('recommendation_kr', '-')}, {out.get('num_analysts', '?')}명"})
+        return out
+    except Exception as e:
+        return {"error": f"컨센서스 조회 실패: {e}"}
+
+
 def get_history(ticker: str, period: str = "6mo") -> dict:
     """차트용 OHLCV 시계열을 반환한다(UI/대시보드 전용). MA20/MA60도 함께 계산.
 
@@ -221,6 +260,9 @@ def get_history(ticker: str, period: str = "6mo") -> dict:
         h = h.copy()
         h["MA20"] = h["Close"].rolling(20).mean()
         h["MA60"] = h["Close"].rolling(60).mean()
+        _d = h["Close"].diff()
+        _rs = _d.clip(lower=0).rolling(14).mean() / (-_d.clip(upper=0)).rolling(14).mean()
+        h["RSI"] = 100 - 100 / (1 + _rs)
         candles = []
         for idx, r in h.iterrows():
             candles.append({"t": str(idx.date()),
@@ -228,7 +270,8 @@ def get_history(ticker: str, period: str = "6mo") -> dict:
                             "l": round(float(r["Low"]), 2), "c": round(float(r["Close"]), 2),
                             "v": int(r["Volume"]),
                             "ma20": (round(float(r["MA20"]), 2) if pd.notna(r["MA20"]) else None),
-                            "ma60": (round(float(r["MA60"]), 2) if pd.notna(r["MA60"]) else None)})
+                            "ma60": (round(float(r["MA60"]), 2) if pd.notna(r["MA60"]) else None),
+                            "rsi": (round(float(r["RSI"]), 1) if pd.notna(r["RSI"]) else None)})
         return {"ticker": ticker, "period": period, "candles": candles}
     except Exception as e:
         return {"error": f"히스토리 조회 실패: {e}", "candles": []}
@@ -347,4 +390,4 @@ def get_news(ticker: str, limit: int = 5) -> dict:
 
 
 TOOLS = [resolve_ticker, get_price, get_financials, get_kr_fundamentals,
-         get_technicals, get_financial_trend, get_news]
+         get_technicals, get_financial_trend, get_analyst, get_news]
