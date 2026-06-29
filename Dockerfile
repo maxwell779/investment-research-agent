@@ -1,17 +1,19 @@
+# ── 1단계: React(Vite) 빌드 ──
+FROM node:20-slim AS frontend
+WORKDIR /fe
+COPY frontend/package.json frontend/package-lock.json* ./
+RUN npm install
+COPY frontend/ ./
+RUN npm run build
+
+# ── 2단계: FastAPI 백엔드 + 정적(React) 서빙 ──
 FROM python:3.11-slim
-
 WORKDIR /app
-
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
+COPY *.py ./
+COPY --from=frontend /fe/dist ./frontend/dist
 
-COPY . .
-
-# Hugging Face Spaces 기본 노출 포트 = 7860
+# Hugging Face Spaces 기본 포트 = 7860 (GEMINI_API_KEY/GITHUB_TOKEN은 Space Secret으로 주입)
 EXPOSE 7860
-ENV STREAMLIT_SERVER_PORT=7860 \
-    STREAMLIT_SERVER_ADDRESS=0.0.0.0 \
-    STREAMLIT_SERVER_HEADLESS=true \
-    STREAMLIT_BROWSER_GATHER_USAGE_STATS=false
-
-CMD ["streamlit", "run", "app.py", "--server.port=7860", "--server.address=0.0.0.0"]
+CMD ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "7860"]

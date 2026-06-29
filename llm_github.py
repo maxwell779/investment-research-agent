@@ -32,11 +32,18 @@ TOOL_SCHEMAS = [
         "name": "get_kr_fundamentals", "description": "한국 종목(.KS/.KQ)의 PER/PBR/EPS/BPS/시총(네이버 금융).",
         "parameters": {"type": "object", "properties": {"ticker": {"type": "string"}}, "required": ["ticker"]}}},
     {"type": "function", "function": {
+        "name": "get_technicals", "description": "기술적 지표: RSI(14), 이동평균(20/60/120), 정/역배열·골든/데드크로스 신호.",
+        "parameters": {"type": "object", "properties": {"ticker": {"type": "string"}}, "required": ["ticker"]}}},
+    {"type": "function", "function": {
+        "name": "get_financial_trend", "description": "최근 연간 매출·영업이익·순이익 추이와 전년대비 성장률.",
+        "parameters": {"type": "object", "properties": {"ticker": {"type": "string"}}, "required": ["ticker"]}}},
+    {"type": "function", "function": {
         "name": "get_news", "description": "티커 관련 최신 뉴스 제목/출처/링크.",
         "parameters": {"type": "object", "properties": {"ticker": {"type": "string"}, "limit": {"type": "integer"}}, "required": ["ticker"]}}},
 ]
 DISPATCH = {"resolve_ticker": tools.resolve_ticker, "get_price": tools.get_price,
             "get_financials": tools.get_financials, "get_kr_fundamentals": tools.get_kr_fundamentals,
+            "get_technicals": tools.get_technicals, "get_financial_trend": tools.get_financial_trend,
             "get_news": tools.get_news}
 
 

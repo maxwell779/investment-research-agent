@@ -9,6 +9,7 @@
 """
 import re
 import requests
+import pandas as pd
 import yfinance as yf
 import FinanceDataReader as fdr
 
@@ -67,31 +68,170 @@ def resolve_ticker(query: str) -> dict:
         return {"error": f"종목 변환 실패: {e}"}
 
 
+def _history(ticker: str, period: str = "1y"):
+    """yfinance OHLCV 히스토리(공통 헬퍼)."""
+    return yf.Ticker(ticker).history(period=period)
+
+
 def get_price(ticker: str) -> dict:
-    """티커의 최근 시세를 조회한다(최근 종가, 5일 등락률).
+    """티커의 시세 요약: 현재가, 기간 수익률(1주·1개월·3개월·1년), 52주 위치, 거래량.
 
     Args:
         ticker: yfinance 호환 티커(예: '005930.KS', 'AAPL'). resolve_ticker 결과를 사용할 것.
 
     Returns:
-        현재가/통화/5일 등락률 등.
+        현재가/통화/기간수익률/52주 고저·위치/거래량 등.
     """
     try:
-        h = yf.Ticker(ticker).history(period="1mo")
+        h = _history(ticker, "1y")
         if h.empty:
             EVIDENCE.append({"tool": "get_price", "input": ticker, "source": "yfinance", "output": "데이터 없음"})
             return {"error": f"{ticker} 시세 데이터를 찾을 수 없습니다."}
-        last = float(h["Close"].iloc[-1])
-        prev5 = float(h["Close"].iloc[-6]) if len(h) >= 6 else float(h["Close"].iloc[0])
-        chg5 = (last - prev5) / prev5 * 100
+        c = h["Close"]
+        last = float(c.iloc[-1])
+
+        def ret(n):
+            return round((last / float(c.iloc[-1 - n]) - 1) * 100, 2) if len(c) > n else None
+
+        hi, lo = float(c.max()), float(c.min())
+        pos = round((last - lo) / (hi - lo) * 100, 1) if hi > lo else None
         cur = "KRW" if ticker.endswith((".KS", ".KQ")) else "USD"
-        out = {"ticker": ticker, "last_close": round(last, 2), "currency": cur,
-               "pct_change_5d": round(chg5, 2), "as_of": str(h.index[-1].date())}
+        out = {"ticker": ticker, "as_of": str(h.index[-1].date()), "currency": cur,
+               "last_close": round(last, 2),
+               "return_1w_pct": ret(5), "return_1m_pct": ret(21),
+               "return_3m_pct": ret(63),
+               "return_1y_pct": (round((last / float(c.iloc[0]) - 1) * 100, 2) if len(c) > 200 else None),
+               "week52_high": round(hi, 2), "week52_low": round(lo, 2), "week52_position_pct": pos,
+               "volume": int(h["Volume"].iloc[-1]), "avg_volume_20d": int(h["Volume"].tail(20).mean())}
         EVIDENCE.append({"tool": "get_price", "input": ticker, "source": f"yfinance ({out['as_of']})",
-                         "output": f"종가 {out['last_close']} {cur}, 5일 {out['pct_change_5d']}%"})
+                         "output": f"종가 {out['last_close']} {cur}, 1M {out['return_1m_pct']}%, 52주위치 {pos}%"})
         return out
     except Exception as e:
         return {"error": f"시세 조회 실패: {e}"}
+
+
+def get_technicals(ticker: str) -> dict:
+    """기술적 지표: 이동평균(20/60/120), RSI(14), 정/역배열·골든/데드크로스 신호.
+
+    Args:
+        ticker: yfinance 호환 티커. resolve_ticker 결과를 사용할 것.
+
+    Returns:
+        RSI14/RSI_state, MA20/60/120, vs_MA20, cross_signal, as_of.
+    """
+    try:
+        h = _history(ticker, "1y")
+        if h.empty or len(h) < 20:
+            EVIDENCE.append({"tool": "get_technicals", "input": ticker, "source": "yfinance", "output": "데이터 부족"})
+            return {"error": f"{ticker} 기술적 지표 계산용 데이터가 부족합니다."}
+        c = h["Close"]
+        last = float(c.iloc[-1])
+        ma = lambda n: round(float(c.rolling(n).mean().iloc[-1]), 2) if len(c) >= n else None
+        ma20, ma60, ma120 = ma(20), ma(60), ma(120)
+        # RSI(14)
+        d = c.diff()
+        gain = d.clip(lower=0).rolling(14).mean()
+        loss = (-d.clip(upper=0)).rolling(14).mean()
+        last_loss = float(loss.iloc[-1])
+        rsi = 100.0 if last_loss == 0 else round(float((100 - 100 / (1 + gain / loss)).iloc[-1]), 1)
+        rsi_state = "과매수(>70)" if rsi >= 70 else "과매도(<30)" if rsi <= 30 else "중립"
+        # MA20 vs MA60 크로스
+        cross = "데이터 부족"
+        if len(c) >= 60:
+            m20, m60 = c.rolling(20).mean(), c.rolling(60).mean()
+            now, prev = m20.iloc[-1] - m60.iloc[-1], m20.iloc[-6] - m60.iloc[-6]
+            if prev <= 0 < now:
+                cross = "골든크로스(최근 상향돌파)"
+            elif prev >= 0 > now:
+                cross = "데드크로스(최근 하향돌파)"
+            else:
+                cross = "정배열(MA20>MA60)" if now > 0 else "역배열(MA20<MA60)"
+        out = {"ticker": ticker, "as_of": str(h.index[-1].date()),
+               "RSI14": rsi, "RSI_state": rsi_state,
+               "MA20": ma20, "MA60": ma60, "MA120": ma120,
+               "vs_MA20": "MA20 위" if (ma20 and last > ma20) else "MA20 아래",
+               "cross_signal": cross}
+        EVIDENCE.append({"tool": "get_technicals", "input": ticker, "source": f"yfinance ({out['as_of']})",
+                         "output": f"RSI {rsi}({rsi_state}), {cross}"})
+        return out
+    except Exception as e:
+        return {"error": f"기술적 지표 계산 실패: {e}"}
+
+
+def get_financial_trend(ticker: str) -> dict:
+    """최근 연간 매출·영업이익·순이익 추이와 전년대비 성장률(yfinance 재무제표).
+
+    Args:
+        ticker: yfinance 호환 티커. resolve_ticker 결과를 사용할 것.
+
+    Returns:
+        revenue/operating_income/net_income 연도별 값 + 각 YoY 성장률(%).
+    """
+    try:
+        fin = yf.Ticker(ticker).income_stmt
+        if fin is None or fin.empty:
+            EVIDENCE.append({"tool": "get_financial_trend", "input": ticker, "source": "yfinance", "output": "재무제표 없음"})
+            return {"error": f"{ticker} 재무제표를 찾을 수 없습니다."}
+        cols = list(fin.columns)[:4]
+
+        def row(names):
+            for n in names:
+                if n in fin.index:
+                    return fin.loc[n]
+            return None
+
+        def series(r):
+            if r is None:
+                return None
+            return [{"year": str(getattr(col, "year", col)), "value": (int(r[col]) if pd.notna(r[col]) else None)} for col in cols]
+
+        def yoy(r):
+            if r is None or len(cols) < 2:
+                return None
+            try:
+                cur, prev = float(r[cols[0]]), float(r[cols[1]])
+                return round((cur / prev - 1) * 100, 1) if prev else None
+            except Exception:
+                return None
+
+        rev, op, ni = row(["Total Revenue", "TotalRevenue"]), row(["Operating Income", "OperatingIncome"]), row(["Net Income", "NetIncome"])
+        out = {"ticker": ticker,
+               "revenue": series(rev), "revenue_yoy_pct": yoy(rev),
+               "operating_income": series(op), "operating_income_yoy_pct": yoy(op),
+               "net_income": series(ni), "net_income_yoy_pct": yoy(ni)}
+        if all(out[k] is None for k in ("revenue", "operating_income", "net_income")):
+            return {"error": f"{ticker} 재무 추세 데이터를 찾을 수 없습니다."}
+        EVIDENCE.append({"tool": "get_financial_trend", "input": ticker, "source": "yfinance 재무제표(연간)",
+                         "output": f"매출 YoY {out['revenue_yoy_pct']}%, 영업이익 YoY {out['operating_income_yoy_pct']}%"})
+        return out
+    except Exception as e:
+        return {"error": f"재무 추세 조회 실패: {e}"}
+
+
+def get_history(ticker: str, period: str = "6mo") -> dict:
+    """차트용 OHLCV 시계열을 반환한다(UI/대시보드 전용). MA20/MA60도 함께 계산.
+
+    Returns:
+        {"ticker","period","candles":[{t,o,h,l,c,v,ma20,ma60}, ...]}
+    """
+    try:
+        h = _history(ticker, period)
+        if h.empty:
+            return {"error": f"{ticker} 히스토리를 찾을 수 없습니다.", "candles": []}
+        h = h.copy()
+        h["MA20"] = h["Close"].rolling(20).mean()
+        h["MA60"] = h["Close"].rolling(60).mean()
+        candles = []
+        for idx, r in h.iterrows():
+            candles.append({"t": str(idx.date()),
+                            "o": round(float(r["Open"]), 2), "h": round(float(r["High"]), 2),
+                            "l": round(float(r["Low"]), 2), "c": round(float(r["Close"]), 2),
+                            "v": int(r["Volume"]),
+                            "ma20": (round(float(r["MA20"]), 2) if pd.notna(r["MA20"]) else None),
+                            "ma60": (round(float(r["MA60"]), 2) if pd.notna(r["MA60"]) else None)})
+        return {"ticker": ticker, "period": period, "candles": candles}
+    except Exception as e:
+        return {"error": f"히스토리 조회 실패: {e}", "candles": []}
 
 
 def get_financials(ticker: str) -> dict:
@@ -206,4 +346,5 @@ def get_news(ticker: str, limit: int = 5) -> dict:
         return {"error": f"뉴스 조회 실패: {e}"}
 
 
-TOOLS = [resolve_ticker, get_price, get_financials, get_kr_fundamentals, get_news]
+TOOLS = [resolve_ticker, get_price, get_financials, get_kr_fundamentals,
+         get_technicals, get_financial_trend, get_news]

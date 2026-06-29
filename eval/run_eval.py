@@ -24,11 +24,27 @@ from agent import build_agent, ask
 
 # (질문, 유형, 정답조회 스펙) — value: (도구함수명, 티커, 결과키)
 CASES = [
+    # --- 시세 ---
     {"q": "삼성전자 현재 주가 알려줘", "type": "value", "gt": ("get_price", "005930.KS", "last_close")},
     {"q": "애플 AAPL 현재 주가 알려줘", "type": "value", "gt": ("get_price", "AAPL", "last_close")},
+    {"q": "엔비디아 NVDA 현재 주가 알려줘", "type": "value", "gt": ("get_price", "NVDA", "last_close")},
+    {"q": "마이크로소프트 MSFT 주가 알려줘", "type": "value", "gt": ("get_price", "MSFT", "last_close")},
+    {"q": "애플 최근 3개월 수익률 알려줘", "type": "value", "gt": ("get_price", "AAPL", "return_3m_pct")},
+    {"q": "엔비디아 52주 위치(%) 알려줘", "type": "value", "gt": ("get_price", "NVDA", "week52_position_pct")},
+    # --- 밸류에이션 ---
     {"q": "SK하이닉스 PER 알려줘", "type": "value", "gt": ("get_kr_fundamentals", "000660.KS", "PER")},
+    {"q": "삼성전자 PBR 알려줘", "type": "value", "gt": ("get_kr_fundamentals", "005930.KS", "PBR")},
+    {"q": "애플 PER 알려줘", "type": "value", "gt": ("get_financials", "AAPL", "PER")},
+    # --- 기술적 ---
+    {"q": "엔비디아 RSI 알려줘", "type": "value", "gt": ("get_technicals", "NVDA", "RSI14")},
+    {"q": "애플 RSI(14) 알려줘", "type": "value", "gt": ("get_technicals", "AAPL", "RSI14")},
+    # --- 재무 추세 ---
+    {"q": "애플 매출 성장률(전년대비) 알려줘", "type": "value", "gt": ("get_financial_trend", "AAPL", "revenue_yoy_pct")},
+    # --- 거절(존재하지 않는 종목) ---
     {"q": "존재하지않는종목ZZZQ 주가 알려줘", "type": "refuse"},
     {"q": "없는회사ABCXYZ 재무 지표 알려줘", "type": "refuse"},
+    {"q": "가짜티커QWERTY PER 알려줘", "type": "refuse"},
+    {"q": "XYZNONEXIST 주가 알려줘", "type": "refuse"},
 ]
 
 REFUSAL_KEYS = ("찾지 못", "찾을 수 없", "없습니다", "확인되지", "데이터가 없", "찾을 수가 없")
@@ -74,7 +90,7 @@ def main():
             ref_ok += int(refused)
             rows.append(f"| {c['q']} | refuse | (지어내면 실패) | — | {'✅ 거절' if refused else '❌ 환각'} |")
         print(f"[{i+1}/{len(CASES)}] {c['q']}\n  → {ans.splitlines()[0] if ans else ''}\n")
-        time.sleep(25)  # 무료 분당 한도(5 RPM) 보호 — 케이스마다 도구 호출이 여러 요청을 쓰므로 넉넉히
+        time.sleep(12)  # 무료 분당 한도 보호 — 케이스마다 도구 호출이 여러 요청을 쓰므로 간격 확보
 
     def pct(a, b):
         return f"{(a / b * 100):.0f}% ({a}/{b})" if b else "—"

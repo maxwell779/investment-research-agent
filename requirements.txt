@@ -1,6 +1,8 @@
-streamlit
+fastapi
+uvicorn[standard]
 google-genai
 openai
+streamlit
 finance-datareader
 yfinance
 requests
