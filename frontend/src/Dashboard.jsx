@@ -158,6 +158,52 @@ function Consensus({ a, cal, recs, cur }) {
   )
 }
 
+function Research({ ticker, name }) {
+  const [q, setQ] = useState('')
+  const [res, setRes] = useState(null)
+  const [load, setLoad] = useState(false)
+  useEffect(() => { setRes(null); setQ('') }, [ticker])
+  async function run(question) {
+    setLoad(true)
+    try {
+      const r = await fetch(`/api/research?query=${encodeURIComponent(ticker)}&q=${encodeURIComponent(question ?? q)}`)
+      setRes(await r.json())
+    } catch (e) { setRes({ answer: '오류: ' + e.message, sources: [] }) }
+    setLoad(false)
+  }
+  return (
+    <div>
+      <p className="muted" style={{ fontSize: '.84rem', marginTop: 0 }}>
+        뉴스·애널리스트·재무·개요를 <b>벡터DB로 검색</b>해, <b>근거 자료만으로</b> 종합합니다(출처 인용).
+      </p>
+      <div className="search" style={{ marginBottom: 12 }}>
+        <input value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => e.key === 'Enter' && run()}
+          placeholder={`${name}에 대해 무엇이든 (비우면 종합 분석)`} />
+        <button onClick={() => run()} disabled={load}>{load ? '검색·종합 중…' : '📚 리서치'}</button>
+      </div>
+      {!res && !load && (
+        <div className="examples">
+          {['종합 분석', '최근 이슈와 리스크', '애널리스트 의견 요약', '재무는 어때?'].map(s => (
+            <button key={s} onClick={() => { setQ(s === '종합 분석' ? '' : s); run(s === '종합 분석' ? '' : s) }}>{s}</button>
+          ))}
+        </div>
+      )}
+      {res && (
+        <div className="card brief" style={{ marginTop: 12 }}>
+          <div className="bubble-content" style={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>{res.answer || res.error}</div>
+          {(res.sources || []).length > 0 && (
+            <div className="evidence">
+              {res.sources.map((s, i) => (
+                <div key={i} className="src">[{i + 1}] <b>{s.source}</b> {s.text?.slice(0, 80)}{s.link && <> — <a href={s.link} target="_blank" rel="noreferrer">원문</a></>}</div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function Dashboard({ data, period, onPeriod, dark }) {
   const [tab, setTab] = useState('차트')
   const [showMA, setShowMA] = useState(true)
@@ -240,7 +286,7 @@ export default function Dashboard({ data, period, onPeriod, dark }) {
 
       <div className="card">
         <div className="tabs">
-          {['차트', '기업개요', '컨센서스·배당', '기술적', '재무', '뉴스'].map(x => (
+          {['차트', '📚 리서치', '기업개요', '컨센서스·배당', '기술적', '재무', '뉴스'].map(x => (
             <button key={x} className={tab === x ? 'active' : ''} onClick={() => setTab(x)}>{x}</button>
           ))}
         </div>
@@ -260,6 +306,7 @@ export default function Dashboard({ data, period, onPeriod, dark }) {
                 : <p className="muted">차트 데이터가 없습니다.</p>}
             </>
           )}
+          {tab === '📚 리서치' && <Research ticker={data.ticker} name={data.name} />}
           {tab === '기업개요' && <Profile pf={data.profile} />}
           {tab === '컨센서스·배당' && <Consensus a={data.analyst} cal={data.calendar} recs={data.recommendations} cur={cur} />}
           {tab === '기술적' && (

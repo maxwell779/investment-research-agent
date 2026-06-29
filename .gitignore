@@ -6,3 +6,4 @@ __pycache__/
 venv/
 *.log
 dart_corp.json
+rag.db

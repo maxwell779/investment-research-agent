@@ -1,0 +1,126 @@
+# -*- coding: utf-8 -*-
+"""
+리포트/뉴스 RAG — 종목별로 뉴스·애널리스트·재무·개요를 수집해 임베딩 후 SQLite에 저장하고,
+질문과 코사인 유사도로 검색한 근거만으로 LLM이 한국어 종합을 생성한다(출처 인용).
+
+- 임베딩: GitHub Models text-embedding-3-small (무료, torch 불필요)
+- 벡터 저장/검색: SQLite + numpy 코사인 (경량 벡터 검색)
+- 생성: agent.quick_complete (프로바이더 자동)
+- 합법성: 전문 재배포 ❌ — 제목·요약·지표 등 메타/짧은 텍스트 + 출처 링크만 저장.
+"""
+import os
+import sqlite3
+import time
+import numpy as np
+from openai import OpenAI
+import tools
+from agent import quick_complete
+
+DB = os.path.join(os.path.dirname(os.path.abspath(__file__)), "rag.db")
+EMB_MODEL = os.environ.get("EMB_MODEL", "openai/text-embedding-3-small")
+EMB_BASE = os.environ.get("GITHUB_MODELS_BASE", "https://models.github.ai/inference")
+
+
+def _client():
+    return OpenAI(base_url=EMB_BASE, api_key=os.environ["GITHUB_TOKEN"])
+
+
+def _conn():
+    c = sqlite3.connect(DB)
+    c.execute("""CREATE TABLE IF NOT EXISTS docs(
+        ticker TEXT, source TEXT, title TEXT, text TEXT, link TEXT, date TEXT, emb BLOB, ts REAL)""")
+    return c
+
+
+def embed(texts):
+    r = _client().embeddings.create(model=EMB_MODEL, input=texts)
+    return [np.array(d.embedding, dtype=np.float32) for d in r.data]
+
+
+def _gather_docs(ticker, name):
+    """종목 관련 문서 수집(뉴스·애널리스트·등급변경·재무·개요). 짧은 텍스트/메타만."""
+    is_kr = ticker.endswith((".KS", ".KQ"))
+    docs = []
+    news = (tools.get_naver_news(name) if is_kr else tools.get_news(ticker, 8)).get("news", [])
+    for n in news:
+        if n.get("title"):
+            docs.append({"source": "뉴스·" + (n.get("publisher") or ""), "title": n["title"],
+                         "text": n["title"], "link": n.get("link"), "date": n.get("date", "")})
+    a = tools.get_analyst(ticker)
+    if not a.get("error"):
+        docs.append({"source": "애널리스트 컨센서스", "title": "컨센서스",
+                     "text": f"목표주가 평균 {a.get('target_mean')}, 투자의견 {a.get('recommendation_kr')}, "
+                             f"상승여력 {a.get('upside_pct')}%, 애널리스트 {a.get('num_analysts')}명",
+                     "link": None, "date": ""})
+    for it in (tools.get_recommendations(ticker).get("items") or [])[:6]:
+        docs.append({"source": "등급변경·" + (it.get("firm") or ""), "title": "등급변경",
+                     "text": f"{it.get('firm')}: {it.get('from')}→{it.get('to')} ({it.get('action')})",
+                     "link": None, "date": it.get("date", "")})
+    fin = tools.get_dart_financials(ticker) if is_kr else tools.get_financial_trend(ticker, "annual")
+    if not fin.get("error"):
+        docs.append({"source": "재무" + ("·DART" if fin.get("source") == "DART" else ""), "title": "재무추세",
+                     "text": f"매출 성장률 {fin.get('revenue_yoy_pct')}%, 영업이익 {fin.get('operating_income_yoy_pct')}%, "
+                             f"순이익 {fin.get('net_income_yoy_pct')}%", "link": None, "date": ""})
+    pf = tools.get_profile(ticker)
+    if not pf.get("error") and pf.get("summary"):
+        docs.append({"source": "기업개요", "title": "사업", "text": pf["summary"][:800],
+                     "link": pf.get("website"), "date": ""})
+    return docs
+
+
+def ingest(ticker, name):
+    docs = _gather_docs(ticker, name)
+    if not docs:
+        return 0
+    embs = embed([d["text"] for d in docs])
+    c = _conn()
+    c.execute("DELETE FROM docs WHERE ticker=?", (ticker,))  # 종목별 코퍼스 갱신
+    for d, e in zip(docs, embs):
+        c.execute("INSERT INTO docs(ticker,source,title,text,link,date,emb,ts) VALUES(?,?,?,?,?,?,?,?)",
+                  (ticker, d["source"], d["title"], d["text"], d["link"], d["date"], e.tobytes(), time.time()))
+    c.commit()
+    c.close()
+    return len(docs)
+
+
+def _fresh(ticker, ttl=3600):
+    c = _conn()
+    row = c.execute("SELECT MAX(ts) FROM docs WHERE ticker=?", (ticker,)).fetchone()
+    c.close()
+    return bool(row and row[0] and (time.time() - row[0] < ttl))
+
+
+def _retrieve(ticker, question, k=6):
+    c = _conn()
+    rows = c.execute("SELECT source,title,text,link,date,emb FROM docs WHERE ticker=?", (ticker,)).fetchall()
+    c.close()
+    if not rows:
+        return []
+    qe = embed([question])[0]
+    qn = qe / (np.linalg.norm(qe) + 1e-9)
+    scored = []
+    for src, title, text, link, date, emb in rows:
+        v = np.frombuffer(emb, dtype=np.float32)
+        sim = float(np.dot(qn, v / (np.linalg.norm(v) + 1e-9)))
+        scored.append((sim, {"source": src, "title": title, "text": text, "link": link, "date": date}))
+    scored.sort(key=lambda x: -x[0])
+    return [d for _, d in scored[:k]]
+
+
+def research(ticker, name, question=""):
+    """종목 코퍼스를 (필요시) 갱신·검색해 출처 인용 종합을 생성한다."""
+    if not _fresh(ticker):
+        ingest(ticker, name)
+    q = question or f"{name} 투자 관점 종합 분석"
+    hits = _retrieve(ticker, q, 6)
+    if not hits:
+        return {"answer": "관련 자료를 찾지 못했습니다.", "sources": []}
+    ctx = "\n".join(f"[{i + 1}] ({h['source']}) {h['text']}" for i, h in enumerate(hits))
+    prompt = (f"아래는 '{name}' 관련 수집 자료(뉴스·애널리스트·재무·개요)입니다. **이 자료만 근거로** "
+              f"한국어 투자 관점 종합을 5~7줄로 작성하고, 각 핵심 문장 끝에 근거 번호 [n]을 표기하세요. "
+              f"자료에 없는 내용은 지어내지 마세요. 끝에 '※ 투자 조언 아님'을 붙이세요.\n\n자료:\n{ctx}\n\n질문: {q}")
+    try:
+        ans = quick_complete(prompt)
+    except Exception as e:
+        ans = f"종합 생성 오류: {e}"
+    return {"answer": ans, "sources": hits}

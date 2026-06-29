@@ -230,6 +230,19 @@ def news_sentiment(query: str):
     return {"items": items}
 
 
+@app.get("/api/research")
+def research_api(query: str, q: str = ""):
+    """리포트·뉴스 RAG: 종목 자료를 임베딩·검색해 출처 인용 종합을 생성."""
+    r = tools.resolve_ticker(query)
+    if "error" in r:
+        return {"error": r["error"], "answer": "", "sources": []}
+    try:
+        from rag import research
+        return research(r["ticker"], r.get("name") or r["ticker"], q)
+    except Exception as e:
+        return {"error": str(e), "answer": "", "sources": []}
+
+
 @app.get("/api/translate")
 def translate(text: str):
     """기업 사업 설명(영문)을 한국어로 요약 번역(온디맨드 LLM)."""
