@@ -21,7 +21,7 @@ export default function Ranking({ onPick }) {
   return (
     <div>
       <div className="card">
-        <h3 style={{ margin: '0 0 14px' }}>🌐 글로벌 랭킹·비교 <span className="muted" style={{ fontSize: '.8rem', fontWeight: 500 }}>시총 USD 환산 · 일배치 {data?.as_of ? `(${data.as_of})` : ''}</span></h3>
+        <h3 style={{ margin: '0 0 14px' }}>🌐 시가총액 순위 <span className="muted" style={{ fontSize: '.8rem', fontWeight: 500 }}>글로벌·USD 환산 · 일배치 {data?.as_of ? `(${data.as_of})` : ''}</span></h3>
         <div className="scr-filters">
           <label>정렬
             <select value={by} onChange={e => setBy(e.target.value)}>
@@ -67,7 +67,7 @@ export default function Ranking({ onPick }) {
                 <td><button className="namelink" onClick={() => onPick && onPick(r.name || r.ticker)}><b>{r.name}</b></button><div className="muted" style={{ fontSize: '.72rem' }}>{r.ticker}</div></td>
                 <td>{r.country}</td>
                 <td className="muted" style={{ fontSize: '.8rem' }}>
-                  {r.sector ? <button className="seclink" onClick={() => { toggleSector(r.sector); force(x => x + 1) }} title="섹터 즐겨찾기">{isSector(r.sector) ? '★ ' : ''}{r.sector}</button> : '—'}
+                  {r.sector ? <button className="seclink" onClick={() => { toggleSector(r.sector); force(x => x + 1) }} title="섹터 즐겨찾기">{isSector(r.sector) ? '★ ' : ''}{r.sector_ko || r.sector}</button> : '—'}
                 </td>
                 <td><Pct v={r.return_1m} /></td>
                 <td>{r.PER ?? '—'}</td>

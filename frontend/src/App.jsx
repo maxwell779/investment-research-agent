@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { fetchDashboard } from './api'
+import Home from './Home'
 import Dashboard from './Dashboard'
 import Compare from './Compare'
 import Portfolio from './Portfolio'
@@ -9,7 +10,7 @@ import Watchlist from './Watchlist'
 import Chat from './Chat'
 
 export default function App() {
-  const [view, setView] = useState('single')      // single | compare
+  const [view, setView] = useState('home')      // home | single | compare | portfolio | screener | ranking | watch
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light')
   const [query, setQuery] = useState('')
   const [data, setData] = useState(null)
@@ -46,6 +47,7 @@ export default function App() {
       <header className="topbar">
         <div className="brand">📈 AI 투자 리서치</div>
         <div className="viewtabs">
+          <button className={view === 'home' ? 'active' : ''} onClick={() => setView('home')}>홈</button>
           <button className={view === 'single' ? 'active' : ''} onClick={() => setView('single')}>종목 분석</button>
           <button className={view === 'compare' ? 'active' : ''} onClick={() => setView('compare')}>종목 비교</button>
           <button className={view === 'portfolio' ? 'active' : ''} onClick={() => setView('portfolio')}>포트폴리오</button>
@@ -68,6 +70,7 @@ export default function App() {
 
       <main className="layout">
         <section className="dash">
+          {view === 'home' && <Home />}
           {view === 'single' && (
             <>
               <div className="examples" style={{ marginBottom: 14 }}>

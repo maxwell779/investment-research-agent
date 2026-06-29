@@ -36,20 +36,36 @@ function FinancialTrend({ trend, cur }) {
 }
 
 function Profile({ pf }) {
+  const [ko, setKo] = useState(null)
+  const [kLoad, setKLoad] = useState(false)
+  useEffect(() => { setKo(null) }, [pf])
   if (!pf || pf.error) return <p className="muted">기업 개요 데이터가 없습니다.</p>
+  async function translate() {
+    setKLoad(true)
+    try {
+      const r = await fetch(`/api/translate?text=${encodeURIComponent(pf.summary || '')}`)
+      const d = await r.json(); setKo(d.text || '(번역 실패)')
+    } catch { setKo('(번역 오류)') }
+    setKLoad(false)
+  }
   return (
     <div className="profile">
       <div className="metrics" style={{ marginBottom: 14 }}>
-        <Metric label="섹터">{pf.sector || '—'}</Metric>
-        <Metric label="산업">{pf.industry || '—'}</Metric>
+        <Metric label="섹터·산업">{pf.sector_ko || pf.sector || '—'}</Metric>
+        <Metric label="산업(상세)">{pf.industry || '—'}</Metric>
         <Metric label="직원수">{pf.employees ? pf.employees.toLocaleString() + '명' : '—'}</Metric>
       </div>
-      {pf.summary && <p className="biz-summary">{pf.summary}</p>}
+      {pf.summary && (
+        <>
+          {!ko && <button className="senti-btn" onClick={translate} disabled={kLoad}>{kLoad ? '🇰🇷 번역 중…' : '🇰🇷 한국어 요약'}</button>}
+          <p className="biz-summary">{ko || pf.summary}</p>
+          {ko && <p className="muted" style={{ fontSize: '.74rem' }}>🤖 AI 한국어 요약 · 원문은 yfinance(영문)</p>}
+        </>
+      )}
       <div className="muted" style={{ fontSize: '.82rem', marginTop: 8 }}>
         {pf.country && <>본사: {pf.country} </>}
         {pf.website && <>· <a href={pf.website} target="_blank" rel="noreferrer">{pf.website.replace(/^https?:\/\//, '')}</a></>}
       </div>
-      <p className="muted" style={{ fontSize: '.76rem', marginTop: 8 }}>※ 사업 요약은 yfinance 원문(영문)입니다. 한국어 종합은 상단 <b>🤖 AI 종합 브리핑</b>을 이용하세요.</p>
     </div>
   )
 }

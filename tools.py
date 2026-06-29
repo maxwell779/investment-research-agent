@@ -42,6 +42,9 @@ def resolve_ticker(query: str) -> dict:
         {"ticker": "005930.KS", "name": "삼성전자", "market": "KOSPI"} 형태.
     """
     q = (query or "").strip()
+    # 지수/환율 심볼(^KS11, KRW=X 등)은 그대로 통과
+    if q.startswith("^") or q.endswith("=X"):
+        return {"ticker": q.upper() if q.endswith("=X") else q, "name": q, "market": "INDEX"}
     # 이미 yfinance 티커 형태(영문/숫자 심볼: AAPL, BRK-B, 005930.KS)면 그대로 사용.
     # ※ 한글은 isalpha()가 True라서 isascii()로 걸러야 KRX 조회로 넘어간다.
     if q and q.isascii() and q.replace(".", "").replace("-", "").isalnum():
@@ -249,6 +252,64 @@ def get_analyst(ticker: str) -> dict:
         return {"error": f"컨센서스 조회 실패: {e}"}
 
 
+SECTOR_KO = {
+    "Technology": "기술", "Financial Services": "금융", "Healthcare": "헬스케어",
+    "Consumer Cyclical": "경기소비재", "Consumer Defensive": "필수소비재",
+    "Communication Services": "커뮤니케이션", "Industrials": "산업재",
+    "Energy": "에너지", "Basic Materials": "소재", "Real Estate": "부동산", "Utilities": "유틸리티",
+}
+INDUSTRY_KO = {
+    "Semiconductors": "반도체", "Semiconductor Equipment & Materials": "반도체 장비·소재",
+    "Consumer Electronics": "가전·전자", "Software - Infrastructure": "인프라 소프트웨어",
+    "Software - Application": "응용 소프트웨어", "Information Technology Services": "IT 서비스",
+    "Internet Content & Information": "인터넷 콘텐츠", "Internet Retail": "인터넷 소매",
+    "Auto Manufacturers": "자동차", "Auto Parts": "자동차 부품",
+    "Banks - Diversified": "은행", "Banks - Regional": "지방은행", "Asset Management": "자산운용",
+    "Insurance - Diversified": "보험", "Credit Services": "여신·결제",
+    "Drug Manufacturers - General": "제약", "Drug Manufacturers - Specialty & Generic": "제약(전문·제네릭)",
+    "Biotechnology": "바이오", "Medical Devices": "의료기기",
+    "Beverages - Non-Alcoholic": "음료(무알콜)", "Beverages - Alcoholic": "주류",
+    "Packaged Foods": "식품", "Confectioners": "제과", "Discount Stores": "할인소매",
+    "Oil & Gas Integrated": "석유·가스(종합)", "Oil & Gas E&P": "석유·가스(개발)", "Oil & Gas Midstream": "석유·가스(수송)",
+    "Specialty Chemicals": "특수화학", "Chemicals": "화학", "Steel": "철강", "Aluminum": "알루미늄",
+    "Aerospace & Defense": "항공·방산", "Specialty Industrial Machinery": "산업기계",
+    "Telecom Services": "통신", "Entertainment": "엔터테인먼트", "Apparel Retail": "의류소매",
+    "Luxury Goods": "명품", "Household & Personal Products": "생활용품",
+    "Travel Services": "여행", "Restaurants": "외식", "Airlines": "항공",
+    "Utilities - Regulated Electric": "전력", "REIT - Diversified": "리츠",
+}
+
+
+def ko_sector(sector, industry=None):
+    """섹터/산업을 한국어로(산업이 더 구체적이면 산업 우선)."""
+    if industry and industry in INDUSTRY_KO:
+        return INDUSTRY_KO[industry]
+    if sector in SECTOR_KO:
+        return SECTOR_KO[sector]
+    return industry or sector or "—"
+
+
+_INDICES = [("^KS11", "코스피"), ("^KQ11", "코스닥"), ("^IXIC", "나스닥"),
+            ("^GSPC", "S&P 500"), ("^DJI", "다우"), ("^N225", "닛케이225"), ("KRW=X", "원/달러")]
+
+
+def get_market_indices() -> dict:
+    """주요 지수·환율(코스피·코스닥·나스닥·S&P·다우·닛케이·원달러) 현재값·등락률."""
+    out = []
+    for sym, name in _INDICES:
+        try:
+            h = yf.Ticker(sym).history(period="5d")
+            if h.empty:
+                continue
+            last = float(h["Close"].iloc[-1])
+            prev = float(h["Close"].iloc[-2]) if len(h) >= 2 else last
+            out.append({"name": name, "symbol": sym, "last": round(last, 2),
+                        "change_pct": round((last / prev - 1) * 100, 2) if prev else None})
+        except Exception:
+            continue
+    return {"indices": out}
+
+
 def get_profile(ticker: str) -> dict:
     """기업 개요: 섹터·산업·사업 요약·직원수·본사 국가·홈페이지(이 회사가 무엇을 하는지).
 
@@ -262,6 +323,7 @@ def get_profile(ticker: str) -> dict:
         info = yf.Ticker(ticker).info or {}
         summary = info.get("longBusinessSummary")
         out = {"sector": info.get("sector"), "industry": info.get("industry"),
+               "sector_ko": ko_sector(info.get("sector"), info.get("industry")),
                "summary": summary, "employees": info.get("fullTimeEmployees"),
                "country": info.get("country"), "website": info.get("website")}
         if not (summary or out.get("industry")):

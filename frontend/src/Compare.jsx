@@ -56,8 +56,13 @@ export default function Compare({ dark }) {
         <div className="search">
           <input value={input} onChange={e => setInput(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && run()}
-            placeholder="쉼표로 2~4개 (예: 삼성전자, SK하이닉스, AAPL)" />
+            placeholder="쉼표로 2~4개 (종목 또는 지수: 삼성전자, AAPL, ^KS11)" />
           <button onClick={() => run()} disabled={loading}>{loading ? '비교 중…' : '비교'}</button>
+        </div>
+        <div className="examples" style={{ marginTop: 10 }}>
+          {['삼성전자, SK하이닉스', 'AAPL, MSFT, NVDA', '^KS11, ^IXIC, ^GSPC'].map(s => (
+            <button key={s} onClick={() => { setInput(s); run(s) }}>{s === '^KS11, ^IXIC, ^GSPC' ? '지수: 코스피·나스닥·S&P' : s}</button>
+          ))}
         </div>
         {err && <p className="error">⚠️ {err}</p>}
       </div>

@@ -135,6 +135,14 @@ def screener(market: str = "all", per_max: float = None, ret1m_min: float = None
     return {"as_of": u.get("as_of"), "count": len(rows), "rows": rows}
 
 
+@app.get("/api/market")
+def market():
+    """시장 현황 홈: 주요 지수·환율 + 시장 주요 뉴스(한국어)."""
+    idx = tools.get_market_indices()
+    news = tools.get_naver_news("증시", 6)
+    return {"indices": idx.get("indices", []), "news": news.get("news", [])}
+
+
 @app.get("/api/ranking")
 def ranking(by: str = "marketcap", country: str = "all", sector: str = "all"):
     """글로벌 유니버스 랭킹/비교. by: marketcap(USD)|return. country/sector 필터."""
@@ -148,6 +156,8 @@ def ranking(by: str = "marketcap", country: str = "all", sector: str = "all"):
         rows.sort(key=lambda r: (r.get("return_1m") is None, -(r.get("return_1m") or 0)))
     else:
         rows.sort(key=lambda r: (r.get("marketcap_usd") is None, -(r.get("marketcap_usd") or 0)))
+    for r in rows:
+        r["sector_ko"] = tools.ko_sector(r.get("sector"))
     countries = sorted({r.get("country") for r in u.get("rows", []) if r.get("country")})
     sectors = sorted({r.get("sector") for r in u.get("rows", []) if r.get("sector")})
     # 나라별 시총 합계(USD)
@@ -208,6 +218,17 @@ def news_sentiment(query: str):
     items = [{"title": n["title"], "publisher": n.get("publisher"), "link": n.get("link"),
               "sentiment": senti.get(i, "중립")} for i, n in enumerate(news)]
     return {"items": items}
+
+
+@app.get("/api/translate")
+def translate(text: str):
+    """기업 사업 설명(영문)을 한국어로 요약 번역(온디맨드 LLM)."""
+    from agent import quick_complete
+    try:
+        out = quick_complete(f"다음 기업의 사업 설명을 자연스러운 한국어로 3~4문장으로 요약해줘(군더더기 없이 핵심만):\n\n{text[:1600]}")
+        return {"text": out}
+    except Exception as e:
+        return {"text": "", "error": str(e)}
 
 
 class ChatReq(BaseModel):

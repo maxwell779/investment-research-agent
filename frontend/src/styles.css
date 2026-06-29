@@ -194,3 +194,10 @@ button:disabled{opacity:.5;cursor:not-allowed;}
 
 /* 기업개요 */
 .biz-summary{font-size:.9rem;line-height:1.6;color:var(--text);background:var(--soft);padding:14px 16px;border-radius:12px;}
+
+/* 시장 현황 홈 — 지수 카드 */
+.idx-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px;}
+.idx{background:var(--soft);border:1px solid var(--line);border-radius:14px;padding:14px 16px;}
+.idx-name{font-size:.8rem;color:var(--muted);font-weight:700;}
+.idx-val{font-size:1.35rem;font-weight:800;letter-spacing:-.5px;margin:4px 0;}
+.idx-chg{font-size:.9rem;font-weight:700;}
