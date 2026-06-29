@@ -14,14 +14,19 @@ from dotenv import load_dotenv
 load_dotenv()
 import tools
 import rag
+import report_crawler
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPORTS = os.path.join(HERE, "reports")
 
 
 def resolve(name_hint):
-    """파일명/폴더명에서 티커 추정 → resolve_ticker."""
-    base = name_hint.split("_")[0].strip()
+    """파일명/폴더명에서 티커 추정. 6자리 코드는 KRX 접미사(.KS/.KQ) 부여."""
+    base = name_hint.split("_")[0].split("(")[0].strip()
+    if base.isdigit() and len(base) == 6:
+        cm = report_crawler._code_map().get(base)
+        if cm:
+            return cm[0]
     r = tools.resolve_ticker(base)
     return r.get("ticker") if "error" not in r else None
 
@@ -31,7 +36,9 @@ def main():
         os.makedirs(REPORTS)
         print(f"reports/ 폴더를 만들었습니다. PDF를 넣고 다시 실행하세요: {REPORTS}")
         return
-    pdfs = glob.glob(os.path.join(REPORTS, "**", "*.pdf"), recursive=True)
+    # 크롤러가 관리하는 reports/miraeasset/ 는 제외(이미 report_crawler가 정확히 색인)
+    pdfs = [p for p in glob.glob(os.path.join(REPORTS, "**", "*.pdf"), recursive=True)
+            if "miraeasset" not in os.path.relpath(p, REPORTS).replace("\\", "/").split("/")]
     if not pdfs:
         print("reports/ 에 PDF가 없습니다. (예: reports/005930_삼성전자_리포트.pdf)")
         return
