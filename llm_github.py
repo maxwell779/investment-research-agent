@@ -52,8 +52,18 @@ def ask(client, question: str, max_rounds: int = 8):
     tools.EVIDENCE.clear()
     messages = [{"role": "system", "content": SYSTEM}, {"role": "user", "content": question}]
     for _ in range(max_rounds):
-        resp = client.chat.completions.create(
-            model=MODEL, messages=messages, tools=TOOL_SCHEMAS, tool_choice="auto", temperature=0)
+        try:
+            resp = client.chat.completions.create(
+                model=MODEL, messages=messages, tools=TOOL_SCHEMAS, tool_choice="auto", temperature=0)
+        except Exception as e:
+            s = str(e)
+            if "permission" in s.lower() or "no_access" in s.lower() or "no access" in s.lower():
+                raise RuntimeError(
+                    "GitHub 토큰에 'Models' 권한이 없습니다. "
+                    "GitHub → Settings → Developer settings → Fine-grained tokens → 해당 토큰 → "
+                    "Account permissions → 'Models' = Read-only 추가(또는 토큰 재발급) 후 다시 시도하세요. "
+                    "([github.com/marketplace/models] 약관 동의도 필요할 수 있습니다.)") from e
+            raise
         msg = resp.choices[0].message
         if not msg.tool_calls:
             return (msg.content or "(응답 없음)"), list(tools.EVIDENCE)
