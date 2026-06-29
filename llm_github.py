@@ -38,6 +38,9 @@ TOOL_SCHEMAS = [
         "name": "get_financial_trend", "description": "최근 연간 매출·영업이익·순이익 추이와 전년대비 성장률.",
         "parameters": {"type": "object", "properties": {"ticker": {"type": "string"}}, "required": ["ticker"]}}},
     {"type": "function", "function": {
+        "name": "get_dart_financials", "description": "한국 기업의 연간 매출·영업이익·순이익(DART 전자공시, 공식·정확). 한국 종목 재무는 이걸 우선.",
+        "parameters": {"type": "object", "properties": {"ticker": {"type": "string"}}, "required": ["ticker"]}}},
+    {"type": "function", "function": {
         "name": "get_analyst", "description": "애널리스트 컨센서스: 목표주가(평균/고/저)·상승여력·투자의견·애널리스트 수.",
         "parameters": {"type": "object", "properties": {"ticker": {"type": "string"}}, "required": ["ticker"]}}},
     {"type": "function", "function": {
@@ -59,6 +62,7 @@ TOOL_SCHEMAS = [
 DISPATCH = {"resolve_ticker": tools.resolve_ticker, "get_profile": tools.get_profile, "get_price": tools.get_price,
             "get_financials": tools.get_financials, "get_kr_fundamentals": tools.get_kr_fundamentals,
             "get_technicals": tools.get_technicals, "get_financial_trend": tools.get_financial_trend,
+            "get_dart_financials": tools.get_dart_financials,
             "get_analyst": tools.get_analyst, "get_recommendations": tools.get_recommendations,
             "get_calendar": tools.get_calendar,
             "get_naver_news": tools.get_naver_news, "get_news": tools.get_news}

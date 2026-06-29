@@ -51,14 +51,24 @@ def dashboard(query: str, period: str = "6mo"):
         return {"error": r["error"]}
     tk = r["ticker"]
     is_kr = tk.endswith((".KS", ".KQ"))
+    price = tools.get_price(tk)
+    technicals = tools.get_technicals(tk)
+    fundamentals = tools.get_kr_fundamentals(tk) if is_kr else tools.get_financials(tk)
+    analyst = tools.get_analyst(tk)
+    # 연간 재무: 한국은 DART(공식·정확), 실패 시 yfinance 폴백
+    fin_annual = tools.get_dart_financials(tk) if is_kr else tools.get_financial_trend(tk, "annual")
+    if is_kr and fin_annual.get("error"):
+        fin_annual = tools.get_financial_trend(tk, "annual")
     result = {
         "ticker": tk, "name": r.get("name"), "market": r.get("market"),
         "profile": tools.get_profile(tk),
-        "price": tools.get_price(tk),
-        "technicals": tools.get_technicals(tk),
-        "fundamentals": (tools.get_kr_fundamentals(tk) if is_kr else tools.get_financials(tk)),
-        "financial_trend": tools.get_financial_trend(tk),
-        "analyst": tools.get_analyst(tk),
+        "price": price,
+        "technicals": technicals,
+        "fundamentals": fundamentals,
+        "score": tools.attractiveness_score(price, technicals, fundamentals, analyst),
+        "financial_trend": fin_annual,
+        "financial_trend_q": tools.get_financial_trend(tk, "quarter"),
+        "analyst": analyst,
         "recommendations": tools.get_recommendations(tk),
         "calendar": tools.get_calendar(tk),
         "history": tools.get_history(tk, period),

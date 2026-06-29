@@ -9,7 +9,11 @@
 """
 import os
 import re
+import io
 import html
+import json
+import zipfile
+import xml.etree.ElementTree as ET
 import requests
 import pandas as pd
 import yfinance as yf
@@ -163,17 +167,19 @@ def get_technicals(ticker: str) -> dict:
         return {"error": f"기술적 지표 계산 실패: {e}"}
 
 
-def get_financial_trend(ticker: str) -> dict:
-    """최근 연간 매출·영업이익·순이익 추이와 전년대비 성장률(yfinance 재무제표).
+def get_financial_trend(ticker: str, freq: str = "annual") -> dict:
+    """매출·영업이익·순이익 추이와 직전대비 성장률(yfinance 재무제표).
 
     Args:
         ticker: yfinance 호환 티커. resolve_ticker 결과를 사용할 것.
+        freq: 'annual'(연간) 또는 'quarter'(분기).
 
     Returns:
-        revenue/operating_income/net_income 연도별 값 + 각 YoY 성장률(%).
+        revenue/operating_income/net_income 기간별 값 + 각 성장률(%), freq.
     """
     try:
-        fin = yf.Ticker(ticker).income_stmt
+        t = yf.Ticker(ticker)
+        fin = t.quarterly_income_stmt if freq == "quarter" else t.income_stmt
         if fin is None or fin.empty:
             EVIDENCE.append({"tool": "get_financial_trend", "input": ticker, "source": "yfinance", "output": "재무제표 없음"})
             return {"error": f"{ticker} 재무제표를 찾을 수 없습니다."}
@@ -185,10 +191,15 @@ def get_financial_trend(ticker: str) -> dict:
                     return fin.loc[n]
             return None
 
+        def label(col):
+            if freq == "quarter" and hasattr(col, "year"):
+                return f"{str(col.year)[2:]}.{col.month:02d}"
+            return str(getattr(col, "year", col))
+
         def series(r):
             if r is None:
                 return None
-            return [{"year": str(getattr(col, "year", col)), "value": (int(r[col]) if pd.notna(r[col]) else None)} for col in cols]
+            return [{"year": label(col), "value": (int(r[col]) if pd.notna(r[col]) else None)} for col in cols]
 
         def yoy(r):
             if r is None or len(cols) < 2:
@@ -200,13 +211,13 @@ def get_financial_trend(ticker: str) -> dict:
                 return None
 
         rev, op, ni = row(["Total Revenue", "TotalRevenue"]), row(["Operating Income", "OperatingIncome"]), row(["Net Income", "NetIncome"])
-        out = {"ticker": ticker,
+        out = {"ticker": ticker, "freq": freq,
                "revenue": series(rev), "revenue_yoy_pct": yoy(rev),
                "operating_income": series(op), "operating_income_yoy_pct": yoy(op),
                "net_income": series(ni), "net_income_yoy_pct": yoy(ni)}
         if all(out[k] is None for k in ("revenue", "operating_income", "net_income")):
             return {"error": f"{ticker} 재무 추세 데이터를 찾을 수 없습니다."}
-        EVIDENCE.append({"tool": "get_financial_trend", "input": ticker, "source": "yfinance 재무제표(연간)",
+        EVIDENCE.append({"tool": "get_financial_trend", "input": ticker, "source": f"yfinance 재무제표({freq})",
                          "output": f"매출 YoY {out['revenue_yoy_pct']}%, 영업이익 YoY {out['operating_income_yoy_pct']}%"})
         return out
     except Exception as e:
@@ -551,6 +562,149 @@ def get_news(ticker: str, limit: int = 5) -> dict:
         return {"error": f"뉴스 조회 실패: {e}"}
 
 
+def attractiveness_score(price, tech, fund, analyst):
+    """단순 규칙 기반 투자매력 점수(0~100, 4요소 ×25). 투명·정보제공용(투자조언 아님)."""
+    c = {}
+    r3 = (price or {}).get("return_3m_pct")
+    c["모멘텀"] = max(0, min(25, round(12.5 + (r3 or 0) * 0.6, 1))) if r3 is not None else 12
+    tr = 12.0
+    if tech:
+        if tech.get("vs_MA20") == "MA20 위":
+            tr += 6
+        cs = tech.get("cross_signal", "")
+        if "골든" in cs or "정배열" in cs:
+            tr += 5
+        elif "데드" in cs or "역배열" in cs:
+            tr -= 4
+        rsi = tech.get("RSI14")
+        if rsi is not None and 40 <= rsi <= 65:
+            tr += 2
+    c["추세"] = max(0, min(25, tr))
+    per = (fund or {}).get("PER")
+    c["밸류"] = (12 if per is None else 25 if per <= 10 else 19 if per <= 20 else 13 if per <= 30 else 7 if per <= 50 else 4)
+    up = (analyst or {}).get("upside_pct")
+    c["애널"] = 12 if up is None else max(0, min(25, round(12 + up * 0.45, 1)))
+    total = round(sum(c.values()), 1)
+    label = "매력적" if total >= 68 else "보통" if total >= 45 else "주의"
+    return {"score": total, "label": label, "breakdown": c}
+
+
+# ── DART(전자공시) 한국 기업 재무 ──
+_DART_MAP = None
+
+
+def _dart_corp_map():
+    """주식코드(6자리)→corp_code 매핑. corpCode.xml 1회 다운로드 후 파일 캐시."""
+    global _DART_MAP
+    if _DART_MAP is not None:
+        return _DART_MAP
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dart_corp.json")
+    if os.path.exists(path):
+        with open(path, encoding="utf-8") as f:
+            _DART_MAP = json.load(f)
+        return _DART_MAP
+    key = os.environ.get("DART_API_KEY")
+    _DART_MAP = {}
+    if not key:
+        return _DART_MAP
+    try:
+        r = requests.get("https://opendart.fss.or.kr/api/corpCode.xml", params={"crtfc_key": key}, timeout=30)
+        zf = zipfile.ZipFile(io.BytesIO(r.content))
+        root = ET.fromstring(zf.read(zf.namelist()[0]))
+        for el in root.iter("list"):
+            sc = (el.findtext("stock_code") or "").strip()
+            cc = (el.findtext("corp_code") or "").strip()
+            if sc and cc:
+                _DART_MAP[sc] = cc
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(_DART_MAP, f)
+    except Exception:
+        pass
+    return _DART_MAP
+
+
+def get_dart_financials(ticker: str) -> dict:
+    """한국 기업의 연간 매출·영업이익·순이익(3개년)을 DART 전자공시에서 조회(공식·정확).
+
+    Args:
+        ticker: 한국 티커('005930.KS' 등). 한국 외에는 사용 불가.
+
+    Returns:
+        revenue/operating_income/net_income 연도별 + 성장률(get_financial_trend와 동일 포맷), source=DART.
+    """
+    if not ticker.endswith((".KS", ".KQ")):
+        return {"error": "DART는 한국 종목 전용입니다."}
+    key = os.environ.get("DART_API_KEY")
+    if not key:
+        return {"error": "DART_API_KEY가 없습니다(.env)."}
+    code = ticker.split(".")[0]
+    corp = _dart_corp_map().get(code)
+    if not corp:
+        return {"error": f"{ticker} DART corp_code를 찾지 못했습니다."}
+
+    def fetch(year):
+        try:
+            d = requests.get("https://opendart.fss.or.kr/api/fnlttSinglAcnt.json",
+                             params={"crtfc_key": key, "corp_code": corp, "bsns_year": str(year), "reprt_code": "11011"},
+                             timeout=15).json()
+            return d.get("list", []) if d.get("status") == "000" else None
+        except Exception:
+            return None
+
+    import datetime
+    rows = None
+    for y in (datetime.date.today().year, datetime.date.today().year - 1):
+        rows = fetch(y)
+        if rows:
+            break
+    if not rows:
+        return {"error": f"{ticker} DART 재무 데이터를 찾지 못했습니다."}
+
+    def num(s):
+        try:
+            return int(str(s).replace(",", ""))
+        except Exception:
+            return None
+
+    want = {"매출액": "revenue", "영업이익": "operating_income", "당기순이익": "net_income"}
+    acc = {v: {} for v in want.values()}
+    yrs = set()
+    # thstrm/frmtrm/bfefrmtrm = 당기/전기/전전기 → 3개년
+    base_year = int(rows[0].get("bsns_year", 0)) if rows else 0
+    year_for = {"thstrm_amount": base_year, "frmtrm_amount": base_year - 1, "bfefrmtrm_amount": base_year - 2}
+    for it in rows:
+        if it.get("fs_div") != "CFS":
+            continue
+        kn = want.get(it.get("account_nm"))
+        if not kn:
+            continue
+        for amt_key, yr in year_for.items():
+            v = num(it.get(amt_key))
+            if v is not None and yr:
+                acc[kn][yr] = v
+                yrs.add(yr)
+    if not yrs:
+        return {"error": f"{ticker} DART 재무 항목을 파싱하지 못했습니다."}
+    years = sorted(yrs, reverse=True)[:3]
+
+    def series(metric):
+        s = [{"year": str(y), "value": acc[metric].get(y)} for y in years]
+        return s if any(x["value"] is not None for x in s) else None
+
+    def yoy(metric):
+        if len(years) >= 2 and acc[metric].get(years[0]) and acc[metric].get(years[1]):
+            return round((acc[metric][years[0]] / acc[metric][years[1]] - 1) * 100, 1)
+        return None
+
+    out = {"ticker": ticker, "freq": "annual", "source": "DART",
+           "revenue": series("revenue"), "revenue_yoy_pct": yoy("revenue"),
+           "operating_income": series("operating_income"), "operating_income_yoy_pct": yoy("operating_income"),
+           "net_income": series("net_income"), "net_income_yoy_pct": yoy("net_income")}
+    EVIDENCE.append({"tool": "get_dart_financials", "input": ticker, "source": "DART 전자공시(연결)",
+                     "output": f"매출 YoY {out['revenue_yoy_pct']}%, 영업이익 YoY {out['operating_income_yoy_pct']}%"})
+    return out
+
+
 def get_naver_news(query: str, display: int = 6) -> dict:
     """네이버 뉴스 검색 API로 한국어 뉴스를 조회한다(한국 종목에 적합).
 
@@ -584,5 +738,5 @@ def get_naver_news(query: str, display: int = 6) -> dict:
 
 
 TOOLS = [resolve_ticker, get_profile, get_price, get_financials, get_kr_fundamentals,
-         get_technicals, get_financial_trend, get_analyst, get_recommendations,
+         get_technicals, get_financial_trend, get_dart_financials, get_analyst, get_recommendations,
          get_calendar, get_naver_news, get_news]

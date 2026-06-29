@@ -6,9 +6,51 @@ import { isStock, toggleStock } from './bookmarks'
 const PERIODS = ['1mo', '3mo', '6mo', '1y', '5y']
 const PLABEL = { '1mo': '1개월', '3mo': '3개월', '6mo': '6개월', '1y': '1년', '5y': '5년' }
 
-function FinancialTrend({ trend, cur }) {
+function ScoreCard({ s }) {
+  if (!s) return null
+  const color = s.score >= 68 ? 'var(--up)' : s.score >= 45 ? '#f59e0b' : 'var(--down)'
+  const maxC = 25
+  return (
+    <div className="card score-card">
+      <div className="score-main">
+        <div>
+          <div className="m-label">투자매력 점수 <span className="muted">(규칙 기반)</span></div>
+          <div className="score-num" style={{ color }}>{s.score}<span style={{ fontSize: '1rem', color: 'var(--muted)' }}>/100</span> <span className="score-label" style={{ color }}>{s.label}</span></div>
+        </div>
+      </div>
+      <div className="score-bars">
+        {Object.entries(s.breakdown || {}).map(([k, v]) => (
+          <div key={k} className="score-bar">
+            <span className="sb-name">{k}</span>
+            <div className="sb-track"><div className="sb-fill" style={{ width: `${(v / maxC) * 100}%` }} /></div>
+            <span className="sb-val">{v}</span>
+          </div>
+        ))}
+      </div>
+      <p className="muted" style={{ fontSize: '.74rem', marginTop: 8 }}>※ 모멘텀·추세·밸류·애널리스트 4요소(각 25점) 단순 합산. 정보 제공용 · 투자 조언 아님.</p>
+    </div>
+  )
+}
+
+function FinancialTrend({ trend, trendQ, cur }) {
+  const [freq, setFreq] = useState('annual')
+  const t = freq === 'quarter' ? trendQ : trend
+  const rev = t?.revenue
+  return (
+    <div>
+      <div className="period" style={{ marginBottom: 12, width: 'fit-content' }}>
+        <button className={freq === 'annual' ? 'active' : ''} onClick={() => setFreq('annual')}>연간</button>
+        <button className={freq === 'quarter' ? 'active' : ''} onClick={() => setFreq('quarter')}>분기</button>
+        {t?.source === 'DART' && <span className="muted" style={{ fontSize: '.74rem', marginLeft: 8 }}>· DART 전자공시</span>}
+      </div>
+      {(!rev || rev.length === 0) ? <p className="muted">재무 데이터가 없습니다 (해당 종목/주기 미제공).</p> : <FinBars trend={t} cur={cur} />}
+    </div>
+  )
+}
+
+function FinBars({ trend, cur }) {
   const rev = trend?.revenue
-  if (!rev || rev.length === 0) return <p className="muted">재무 추세 데이터가 없습니다 (해당 종목 미제공).</p>
+  if (!rev || rev.length === 0) return <p className="muted">재무 추세 데이터가 없습니다.</p>
   const max = Math.max(...rev.map(r => r.value || 0)) || 1
   const rows = [
     ['매출', trend.revenue, trend.revenue_yoy_pct],
@@ -194,6 +236,8 @@ export default function Dashboard({ data, period, onPeriod, dark }) {
         </Metric>
       </div>
 
+      <ScoreCard s={data.score} />
+
       <div className="card">
         <div className="tabs">
           {['차트', '기업개요', '컨센서스·배당', '기술적', '재무', '뉴스'].map(x => (
@@ -228,7 +272,7 @@ export default function Dashboard({ data, period, onPeriod, dark }) {
               <Metric label="크로스 신호">{t.cross_signal || '—'}</Metric>
             </div>
           )}
-          {tab === '재무' && <FinancialTrend trend={data.financial_trend} cur={cur} />}
+          {tab === '재무' && <FinancialTrend trend={data.financial_trend} trendQ={data.financial_trend_q} cur={cur} />}
           {tab === '뉴스' && (
             <>
               {(data.news?.news?.length > 0) && (

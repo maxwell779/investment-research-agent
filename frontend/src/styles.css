@@ -195,6 +195,17 @@ button:disabled{opacity:.5;cursor:not-allowed;}
 /* 기업개요 */
 .biz-summary{font-size:.9rem;line-height:1.6;color:var(--text);background:var(--soft);padding:14px 16px;border-radius:12px;}
 
+/* 투자매력 점수 카드 */
+.score-card{display:flex;flex-direction:column;gap:12px;}
+.score-num{font-size:2rem;font-weight:800;letter-spacing:-1px;margin-top:4px;}
+.score-label{font-size:1rem;font-weight:800;margin-left:6px;}
+.score-bars{display:flex;flex-direction:column;gap:8px;}
+.score-bar{display:flex;align-items:center;gap:10px;font-size:.85rem;}
+.sb-name{width:48px;color:var(--muted);font-weight:700;}
+.sb-track{flex:1;height:10px;background:var(--soft);border-radius:6px;overflow:hidden;}
+.sb-fill{height:100%;background:var(--accent);border-radius:6px;}
+.sb-val{width:34px;text-align:right;font-weight:700;}
+
 /* 시장 현황 홈 — 지수 카드 */
 .idx-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px;}
 .idx{background:var(--soft);border:1px solid var(--line);border-radius:14px;padding:14px 16px;}
