@@ -34,20 +34,33 @@ function FinancialTrend({ trend, cur }) {
   )
 }
 
-function Consensus({ a, cur }) {
-  if (!a || a.error) return <p className="muted">애널리스트 컨센서스가 없습니다 (yfinance 커버리지 제한).</p>
+function Consensus({ a, cal, cur }) {
+  const noA = !a || a.error
+  const noC = !cal || cal.error
+  if (noA && noC) return <p className="muted">컨센서스·일정 데이터가 없습니다 (yfinance 커버리지 제한).</p>
   return (
     <div>
-      <div className="metrics" style={{ marginBottom: 14 }}>
-        <Metric label="투자의견" sub={a.num_analysts ? `애널리스트 ${a.num_analysts}명` : null}>
-          <span className={a.upside_pct > 0 ? 'up' : a.upside_pct < 0 ? 'down' : ''}>{a.recommendation_kr || '—'}</span>
-        </Metric>
-        <Metric label="목표주가(평균)" sub={a.upside_pct != null ? '상승여력' : null}>
-          {fmtPrice(a.target_mean, cur)} {a.upside_pct != null && <span style={{ fontSize: '.9rem' }}><Pct v={a.upside_pct} /></span>}
-        </Metric>
-        <Metric label="목표 범위">{fmtPrice(a.target_low, cur)} ~ {fmtPrice(a.target_high, cur)}</Metric>
-      </div>
-      <p className="muted" style={{ fontSize: '.78rem' }}>※ yfinance 집계 애널리스트 컨센서스(커버리지·시점 제한 가능). 투자 조언 아님.</p>
+      {!noA && (
+        <div className="metrics" style={{ marginBottom: 14 }}>
+          <Metric label="투자의견" sub={a.num_analysts ? `애널리스트 ${a.num_analysts}명` : null}>
+            <span className={a.upside_pct > 0 ? 'up' : a.upside_pct < 0 ? 'down' : ''}>{a.recommendation_kr || '—'}</span>
+          </Metric>
+          <Metric label="목표주가(평균)" sub={a.upside_pct != null ? '상승여력' : null}>
+            {fmtPrice(a.target_mean, cur)} {a.upside_pct != null && <span style={{ fontSize: '.9rem' }}><Pct v={a.upside_pct} /></span>}
+          </Metric>
+          <Metric label="목표 범위">{fmtPrice(a.target_low, cur)} ~ {fmtPrice(a.target_high, cur)}</Metric>
+        </div>
+      )}
+      {!noC && (
+        <div className="metrics" style={{ marginBottom: 14 }}>
+          <Metric label="다음 실적 발표">{cal.next_earnings ? String(cal.next_earnings).slice(0, 10) : '—'}</Metric>
+          <Metric label="배당수익률" sub={cal.ex_dividend_date ? `배당락 ${String(cal.ex_dividend_date).slice(0, 10)}` : null}>
+            {cal.dividend_yield_pct != null ? `${cal.dividend_yield_pct}%` : '—'}
+          </Metric>
+          <Metric label="배당성향">{cal.payout_ratio_pct != null ? `${cal.payout_ratio_pct}%` : '—'}</Metric>
+        </div>
+      )}
+      <p className="muted" style={{ fontSize: '.78rem' }}>※ yfinance 집계(커버리지·시점 제한 가능). 투자 조언 아님.</p>
     </div>
   )
 }
@@ -80,7 +93,7 @@ export default function Dashboard({ data, period, onPeriod, dark }) {
 
       <div className="card">
         <div className="tabs">
-          {['차트', '컨센서스', '기술적', '재무', '뉴스'].map(x => (
+          {['차트', '컨센서스·배당', '기술적', '재무', '뉴스'].map(x => (
             <button key={x} className={tab === x ? 'active' : ''} onClick={() => setTab(x)}>{x}</button>
           ))}
         </div>
@@ -100,7 +113,7 @@ export default function Dashboard({ data, period, onPeriod, dark }) {
                 : <p className="muted">차트 데이터가 없습니다.</p>}
             </>
           )}
-          {tab === '컨센서스' && <Consensus a={data.analyst} cur={cur} />}
+          {tab === '컨센서스·배당' && <Consensus a={data.analyst} cal={data.calendar} cur={cur} />}
           {tab === '기술적' && (
             <div className="tech-grid">
               <Metric label="RSI(14)" sub={t.RSI_state}>{t.RSI14 ?? '—'}</Metric>

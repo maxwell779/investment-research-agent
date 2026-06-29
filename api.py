@@ -58,6 +58,7 @@ def dashboard(query: str, period: str = "6mo"):
         "fundamentals": (tools.get_kr_fundamentals(tk) if is_kr else tools.get_financials(tk)),
         "financial_trend": tools.get_financial_trend(tk),
         "analyst": tools.get_analyst(tk),
+        "calendar": tools.get_calendar(tk),
         "history": tools.get_history(tk, period),
         "news": tools.get_news(tk, 6),
     }
@@ -92,6 +93,60 @@ def compare(tickers: str, period: str = "6mo"):
             "norm": norm,
         })
     return {"items": items, "period": period}
+
+
+import json as _json
+
+_UNIVERSE = None
+
+
+def _load_universe():
+    global _UNIVERSE
+    if _UNIVERSE is None:
+        path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "universe.json")
+        try:
+            with open(path, encoding="utf-8") as f:
+                _UNIVERSE = _json.load(f)
+        except Exception:
+            _UNIVERSE = {"as_of": None, "rows": []}
+    return _UNIVERSE
+
+
+@app.get("/api/screener")
+def screener(market: str = "all", per_max: float = None, ret1m_min: float = None,
+             rsi_min: float = None, rsi_max: float = None, sort: str = "marketcap"):
+    """사전계산 유니버스에서 조건 필터링(일배치 기준). market: all|KR|US"""
+    u = _load_universe()
+    rows = list(u.get("rows", []))
+    if market in ("KR", "US"):
+        rows = [r for r in rows if r.get("market") == market]
+    if per_max is not None:
+        rows = [r for r in rows if r.get("PER") is not None and r["PER"] <= per_max]
+    if ret1m_min is not None:
+        rows = [r for r in rows if r.get("return_1m") is not None and r["return_1m"] >= ret1m_min]
+    if rsi_min is not None:
+        rows = [r for r in rows if r.get("RSI") is not None and r["RSI"] >= rsi_min]
+    if rsi_max is not None:
+        rows = [r for r in rows if r.get("RSI") is not None and r["RSI"] <= rsi_max]
+    key = {"marketcap": "marketcap", "return": "return_1m", "per": "PER", "rsi": "RSI"}.get(sort, "marketcap")
+    rows.sort(key=lambda r: (r.get(key) is None, -(r.get(key) or 0) if sort != "per" else (r.get(key) or 1e9)))
+    return {"as_of": u.get("as_of"), "count": len(rows), "rows": rows}
+
+
+@app.get("/api/quotes")
+def quotes(tickers: str):
+    """여러 종목의 현재가(포트폴리오 평가용). 최대 30개."""
+    out = []
+    for q in [s.strip() for s in tickers.split(",") if s.strip()][:30]:
+        r = tools.resolve_ticker(q)
+        if "error" in r:
+            out.append({"query": q, "error": r["error"]})
+            continue
+        p = tools.get_price(r["ticker"])
+        out.append({"query": q, "ticker": r["ticker"], "name": r.get("name"),
+                    "last": p.get("last_close"), "currency": p.get("currency"),
+                    "return_1m": p.get("return_1m_pct")})
+    return {"quotes": out}
 
 
 class ChatReq(BaseModel):

@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { fetchDashboard } from './api'
 import Dashboard from './Dashboard'
 import Compare from './Compare'
+import Portfolio from './Portfolio'
+import Screener from './Screener'
 import Chat from './Chat'
 
 export default function App() {
@@ -44,6 +46,8 @@ export default function App() {
         <div className="viewtabs">
           <button className={view === 'single' ? 'active' : ''} onClick={() => setView('single')}>종목 분석</button>
           <button className={view === 'compare' ? 'active' : ''} onClick={() => setView('compare')}>종목 비교</button>
+          <button className={view === 'portfolio' ? 'active' : ''} onClick={() => setView('portfolio')}>포트폴리오</button>
+          <button className={view === 'screener' ? 'active' : ''} onClick={() => setView('screener')}>스크리너</button>
         </div>
         {view === 'single' && (
           <div className="search">
@@ -60,22 +64,21 @@ export default function App() {
 
       <main className="layout">
         <section className="dash">
-          {view === 'single' ? (
+          {view === 'single' && (
             <>
-              {view === 'single' && (
-                <div className="examples" style={{ marginBottom: 14 }}>
-                  {['삼성전자', 'SK하이닉스', 'AAPL', 'NVDA', '테슬라'].map(s => (
-                    <button key={s} onClick={() => { setQuery(s); load(s) }}>{s}</button>
-                  ))}
-                </div>
-              )}
+              <div className="examples" style={{ marginBottom: 14 }}>
+                {['삼성전자', 'SK하이닉스', 'AAPL', 'NVDA', '테슬라'].map(s => (
+                  <button key={s} onClick={() => { setQuery(s); load(s) }}>{s}</button>
+                ))}
+              </div>
               {err && <div className="card error">⚠️ {err}</div>}
-              {!data && !err && <div className="card empty">종목을 검색하면 시세·기술적 지표·재무·애널리스트 컨센서스·뉴스를 한눈에. (실시간 무료 데이터)</div>}
+              {!data && !err && <div className="card empty">종목을 검색하면 시세·기술적 지표·재무·애널리스트 컨센서스·실적/배당·뉴스를 한눈에. (실시간 무료 데이터)</div>}
               {data && <Dashboard data={data} period={period} onPeriod={changePeriod} dark={dark} />}
             </>
-          ) : (
-            <Compare dark={dark} />
           )}
+          {view === 'compare' && <Compare dark={dark} />}
+          {view === 'portfolio' && <Portfolio />}
+          {view === 'screener' && <Screener />}
         </section>
         <aside className="side">
           <Chat ticker={data?.name} />

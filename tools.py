@@ -247,6 +247,51 @@ def get_analyst(ticker: str) -> dict:
         return {"error": f"컨센서스 조회 실패: {e}"}
 
 
+def get_calendar(ticker: str) -> dict:
+    """다음 실적 발표일과 배당 정보(배당수익률·배당락일·배당성향)를 조회한다.
+
+    Args:
+        ticker: yfinance 호환 티커. resolve_ticker 결과를 사용할 것.
+
+    Returns:
+        next_earnings, dividend_yield_pct, dividend_rate, ex_dividend_date, payout_ratio_pct 등.
+    """
+    import datetime
+    try:
+        t = yf.Ticker(ticker)
+        info = t.info or {}
+        out = {}
+        try:
+            cal = t.calendar
+            ed = cal.get("Earnings Date") if isinstance(cal, dict) else None
+            if isinstance(ed, (list, tuple)) and ed:
+                ed = ed[0]
+            if ed is not None:
+                out["next_earnings"] = str(ed)
+        except Exception:
+            pass
+        dy = info.get("dividendYield")
+        if dy is not None:
+            # 현재 yfinance는 dividendYield를 퍼센트값으로 제공(예: 0.38 = 0.38%)
+            out["dividend_yield_pct"] = round(dy, 2)
+        if info.get("dividendRate") is not None:
+            out["dividend_rate"] = info.get("dividendRate")
+        exd = info.get("exDividendDate")
+        if exd:
+            out["ex_dividend_date"] = (str(datetime.datetime.utcfromtimestamp(exd).date())
+                                       if isinstance(exd, (int, float)) else str(exd))
+        if info.get("payoutRatio") is not None:
+            out["payout_ratio_pct"] = round(info["payoutRatio"] * 100, 1)
+        if not out:
+            EVIDENCE.append({"tool": "get_calendar", "input": ticker, "source": "yfinance", "output": "일정 없음"})
+            return {"error": f"{ticker} 실적/배당 일정을 찾을 수 없습니다."}
+        EVIDENCE.append({"tool": "get_calendar", "input": ticker, "source": "yfinance(실적·배당)",
+                         "output": f"실적 {out.get('next_earnings', '-')}, 배당수익률 {out.get('dividend_yield_pct', '-')}%"})
+        return out
+    except Exception as e:
+        return {"error": f"실적/배당 조회 실패: {e}"}
+
+
 def get_history(ticker: str, period: str = "6mo") -> dict:
     """차트용 OHLCV 시계열을 반환한다(UI/대시보드 전용). MA20/MA60도 함께 계산.
 
@@ -390,4 +435,4 @@ def get_news(ticker: str, limit: int = 5) -> dict:
 
 
 TOOLS = [resolve_ticker, get_price, get_financials, get_kr_fundamentals,
-         get_technicals, get_financial_trend, get_analyst, get_news]
+         get_technicals, get_financial_trend, get_analyst, get_calendar, get_news]
