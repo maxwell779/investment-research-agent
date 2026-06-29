@@ -81,6 +81,7 @@ def main():
 
     md = [
         "## 평가 결과 (정직성 하니스)",
+        f"- 측정 백엔드: **{os.environ.get('LLM_PROVIDER', 'gemini')}** · 표본 {len(CASES)}케이스",
         f"- **출처적중률(citation)**: {pct(cite_ok, cite_tot)}",
         f"- **수치정확도(±2%)**: {pct(num_ok, num_tot)}",
         f"- **거절률(존재X 종목)**: {pct(ref_ok, ref_tot)}",
