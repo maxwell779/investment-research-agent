@@ -38,8 +38,20 @@ def _conn():
 
 
 def embed(texts):
-    r = _client().embeddings.create(model=EMB_MODEL, input=texts)
-    return [np.array(d.embedding, dtype=np.float32) for d in r.data]
+    """임베딩(프로바이더별). github=text-embedding-3-small(1536d), gemini=text-embedding-004(768d).
+    같은 배포 내에선 한 모델만 쓰므로 차원 혼용 없음(rag.db는 환경별로 분리)."""
+    provider = os.environ.get("LLM_PROVIDER", "gemini").lower()
+    if provider == "github":
+        r = _client().embeddings.create(model=EMB_MODEL, input=texts)
+        return [np.array(d.embedding, dtype=np.float32) for d in r.data]
+    # gemini (HF 등 GitHub Models 미도달 환경)
+    from google import genai
+    client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY", ""))
+    out = []
+    for t in texts:  # google-genai embed_content는 1건씩 안전
+        e = client.models.embed_content(model="gemini-embedding-001", contents=t)
+        out.append(np.array(e.embeddings[0].values, dtype=np.float32))
+    return out
 
 
 def _gather_docs(ticker, name):

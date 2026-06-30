@@ -12,6 +12,7 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 COPY *.py ./
+COPY universe.json ./
 COPY --from=frontend /fe/dist ./frontend/dist
 
 # Hugging Face Spaces 기본 포트 = 7860 (GEMINI_API_KEY/GITHUB_TOKEN은 Space Secret으로 주입)
