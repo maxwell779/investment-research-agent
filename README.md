@@ -20,6 +20,17 @@ license: mit
 
 ---
 
+### 🖼 미리보기
+
+**📊 종목 분석** — 지표 카드 · 투자매력 점수 · 캔들차트 · AI 리서치 챗(출처 인용)
+![종목 분석 대시보드](docs/screenshots/02_dashboard.png)
+
+| 🏠 시장 현황 홈 | 🔎 글로벌 시총 랭킹(14개국) |
+|---|---|
+| ![홈](docs/screenshots/01_home.png) | ![랭킹](docs/screenshots/03_ranking.png) |
+
+---
+
 ## ✨ 핵심 차별점
 
 이 프로젝트는 *"또 하나의 주식 차트 앱"*이 아니라, **기존 증권사·TradingView·범용 챗봇이 못 하는 빈틈**을 노립니다.
